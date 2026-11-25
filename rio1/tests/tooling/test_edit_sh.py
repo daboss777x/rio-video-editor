@@ -302,6 +302,29 @@ def test_prepare_then_finish_for_rio(dirs):
     assert (dirs["output"] / f"{rio['stem']}_edited.mp4").exists()
 
 
+def test_finish_also_writes_a_premiere_xml_next_to_the_video(dirs):
+    """User, 2026-11-25: every finished edit also comes with output/<name>_edited.xml for Premiere."""
+    make_clip(dirs, dur=3)
+    env = {"EDITOR_SKIP_PREFLIGHT": "1", "EDITOR_NO_RECORD": "1", "MONITOR_INTERVAL_S": "0.2"}
+    p = run(dirs, "--prepare", extra_env=env, timeout=180)
+    assert p.returncode == 0, p.stdout + p.stderr
+    (run_dir,) = list(dirs["runs"].iterdir())
+    e = run_dir / "edit"
+    rio = json.loads((e / "rio.json").read_text())
+    (clip,) = [f for f in run_dir.iterdir() if f.suffix == ".mp4"]
+    (e / "edl.json").write_text(json.dumps({"version": 1, "sources": {clip.stem: f"../{clip.name}"},
+                                            "ranges": [{"source": clip.stem, "start": 0.5, "end": 2.0}],
+                                            "total_duration_s": 1.5}))
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", "0.5", "-i", str(clip), "-t", "1.5", str(e / "final.mp4")],
+                   check=True)
+    (e / "REPORT.md").write_text("# r\n\n## Forecast vs actual\n<!-- FORECAST_VS_ACTUAL: edit.sh fills this in after the run -->\n")
+    p = run(dirs, "--finish", str(run_dir), "0", extra_env=env, timeout=120)
+    assert p.returncode == 0, p.stdout + p.stderr
+    xml = dirs["output"] / f"{rio['stem']}_edited.xml"
+    assert xml.exists() and (dirs["output"] / f"{rio['stem']}_edited_audio.wav").exists()
+    assert f"premiere xml: {xml}" in p.stdout
+
+
 def test_finish_refuses_a_run_not_prepared(dirs, tmp_path):
     d = tmp_path / "r" / "edit"
     d.mkdir(parents=True)

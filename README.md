@@ -43,6 +43,9 @@ and you keep the creative part.
 - Voice clean-up (tone fix and light denoise), YouTube loudness, 4K HEVC output.
 - An AI reviewer that listens back to the finished video and flags clipped words or repeats.
 - Revise loop: timestamped notes produce v2, v3 and so on, re-rendering only what changed.
+- A Premiere Pro file with every edit (`output/<name>_edited.xml`, File > Import): Rio's cuts on
+  your raw clips, still editable, plus Rio's cleaned audio and markers at every blur and every spot
+  the reviewer flagged. Blurs and the 4K upscale are redone by hand in Premiere.
 - A time, cost and memory forecast before every run that learns from your past runs.
 - **Rio 2.0:** a two-camera mode (phone camera synced by sound, face bubble next to the screen,
   face tracking, face-only shots, testimonial inserts).
@@ -130,6 +133,8 @@ If you prefer to do it by hand on a Mac with Apple Silicon:
 3. In Claude Code, type **`/rio`**. Rio asks if there's sensitive info on screen, shows the
    forecast and starts. Or run `./edit.sh` in a terminal and leave it overnight.
 4. Find the video in `output/` and the report in `Reports/`. The report lists timecodes to check.
+   Want to keep editing by hand? Import `output/<name>_edited.xml` into Premiere Pro (keep the raw
+   clips in `runs/` where they are, or Premiere asks you to relink them).
 5. To fix spots: `/rio revise`, then type notes like `4:05 - cut this tangent`.
 
 ## Make it yours

@@ -81,6 +81,12 @@ studio() {
   [ -f "$STUDIO" ] || return 0
   python3 "$STUDIO" "$@" </dev/null >/dev/null 2>&1 || true
 }
+# Premiere Pro XML (+ Rio's audio as a .wav) next to a finished video (user, 2026-11-25).
+# Best effort: a missing edl.json or a failed export never fails the run. $1 = E, $2 = the .xml.
+premiere_xml() {
+  [ -f "$1/edl.json" ] && [ -f "$1/final.mp4" ] || { echo "premiere xml: skipped (no edl.json or final.mp4)"; return 0; }
+  "$PY" "$CODE/helpers/media/premiere_xml.py" --edit-dir "$1" -o "$2" || echo "premiere xml: export failed (the video is fine)"
+}
 # Same, but returns the Studio's exit code (for "try the new command, else fall back").
 studio_try() {
   [ -f "$STUDIO" ] || return 0
@@ -357,6 +363,7 @@ rev_finish_steps() {
   studio stage report done
   mkdir -p "$OUTPUT_DIR" "$REPORTS_DIR"
   cp "$E/final.mp4" "$OUT_MP4" && echo "output: $OUT_MP4"
+  premiere_xml "$E" "${OUT_MP4%.mp4}.xml"
   if [ -f "$VN/REVISION.md" ] && [ -f "$E/verify/heard.md" ]; then
     { echo; sed 's/^# /## /' "$E/verify/heard.md"; } >> "$VN/REVISION.md"   # the listen-back, for you to eyeball
   fi
@@ -677,6 +684,7 @@ PYEOF
   "${INTAKE[@]}" store "$RUN_DIR" --cache "$CACHE_DIR" || echo "transcript cache: store failed"
   mkdir -p "$OUTPUT_DIR" "$REPORTS_DIR"
   [ -f "$E/final.mp4" ] && cp "$E/final.mp4" "$OUTPUT_DIR/${STEM}_edited.mp4" && echo "output: $OUTPUT_DIR/${STEM}_edited.mp4"
+  premiere_xml "$E" "$OUTPUT_DIR/${STEM}_edited.xml"
   [ -f "$E/REPORT.md" ] && cp "$E/REPORT.md" "$REPORTS_DIR/${STEM}_REPORT.md"
   [ -f "$CODE/docs/feedback-template.md" ] && cp "$CODE/docs/feedback-template.md" "$RUN_DIR/feedback.md"
   if [ -f "$REPORTS_DIR/${STEM}_REPORT.md" ]; then

@@ -66,7 +66,10 @@ animations, approval waits) conflict with this project. Only its `helpers/` code
    diffs it against the EDL → `verify/heard.md`; Ines → `verify/verdict.json`; `--coverage` makes sure
    she ruled on every flagged edge.
 9. At most **one** fix pass, then `REPORT.md`. `edit.sh --finish` records the run in `history/`,
-   recalibrates the forecast and copies the video to `output/` and the report to `Reports/`.
+   recalibrates the forecast and copies the video to `output/` and the report to `Reports/`. It also
+   writes a Premiere Pro XML next to the video (`helpers/media/premiere_xml.py`: the cuts on the raw
+   clips, Rio's audio as `_audio.wav`, markers at blurs and Ines's problems; best effort, see
+   CONTRACTS "Premiere Pro XML"). Revisions get `_edited_vN.xml` the same way.
 
 **Revise loop**: `./edit.sh --revise <run|output name> <notes.txt>` or `/rio revise`. Each note
 (`M:SS - text`, spans `A - B` allowed) becomes a ±60 s window; Rosa fixes up to 5 windows per call;

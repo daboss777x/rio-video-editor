@@ -198,3 +198,20 @@ Rio 1 edits one already-layered recording (OBS puts the camera on the screen). I
 - **Forecast.** `blur` = `blur_s_per_output_min` x output min; 4K render = `render4k_s_per_output_gigapixel`
   x output frames x output MP / 1000 (RSS `render4k_peak_rss_mb`). record_run writes these instead of
   the old `render_s_per_output_megapixel_min` when `drivers.render_mode` is `4k`.
+
+## Premiere Pro XML (user, 2026-11-25)
+
+Every finished edit and every revision also writes, next to the video in `output/`:
+- `<name>_edited[_vN].xml`: a Final Cut Pro 7 XML (xmeml v4) sequence that Premiere Pro imports
+  (File > Import). `helpers/media/premiere_xml.py --edit-dir E -o <xml>`, called by `edit.sh`
+  (`premiere_xml`) after the video is copied; best effort, it never fails a run.
+- `<name>_edited[_vN]_audio.wav`: Rio's finished sound (voice filter + loudness), 48 kHz stereo PCM.
+
+The sequence: the first clip's size and frame rate (NTSC when the rate's denominator is 1001).
+V1 = one clip item per EDL range on the raw clip (`edl.sources`, resolved from E), timeline frames
+from the running total of exact seconds, so nothing drifts; source length = timeline length.
+A1/A2 = Rio's audio (on); A3/A4 = each range's raw audio (off while Rio's audio is there).
+Markers: one per blurred stretch (`blurs.json`, mapped to output time, same kind + overlapping =
+one, named `Blur: <kind>`) and one per verifier problem (`verdict.json` `output_tc`, `Ines #<rank>`).
+Not rebuilt (the user chose raw cuts only): blurs, the 4K upscale, the voice filter, the camera
+layout (Rio 2.0). The XML points at the raw clips in `runs/<id>/`: moving them means relinking.

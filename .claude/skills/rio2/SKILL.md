@@ -89,7 +89,8 @@ wrap chime. Token counts for an interactive run are in this chat's session, not 
 Say so in one line.
 
 Then tell the user, in 4-6 short lines:
-- where the video is (`output/<name>_edited.mp4`) and its length
+- where the video is (`output/<name>_edited.mp4`) and its length, and that the Premiere file
+  (`output/<name>_edited.xml`, File > Import) is next to it
 - the verdict and anything still flagged
 - the timecodes to eyeball
 - two-camera runs: the camera sync (ms off), any stretches without the camera, and the layout stills
