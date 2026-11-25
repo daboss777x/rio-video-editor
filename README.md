@@ -165,3 +165,9 @@ If you prefer to do it by hand on a Mac with Apple Silicon:
   media work, Apple's Vision framework for reading the screen on macOS.
 - [Claude Code](https://docs.claude.com/en/docs/claude-code) by Anthropic runs Rio and its agents.
 - Designed and built with Claude Code.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE). You may use, copy, change and share Rio, including commercially, as
+long as the copyright notice stays in. video-use, AssemblyAI, FFmpeg and Claude Code keep their own
+licences and terms.
