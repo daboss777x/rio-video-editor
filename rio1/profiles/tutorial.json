@@ -1,0 +1,132 @@
+{
+  "name": "tutorial",
+  "notes": "Thresholds marked TUNE are provisional until the Phase 4 test clip. Davis owns this file; agents propose changes.",
+  "detect": {
+    "gap_min_s": 1.0,
+    "analysis_width": 480,
+    "analysis_fps": 4,
+    "scene_T": 0.003,
+    "typing_tail_s": 1.0,
+    "TUNE": [
+      "scene_T",
+      "active_net_frac",
+      "typing_min_busy",
+      "typing_min_persist",
+      "typing_min_net_frac",
+      "typing_max_h_frac",
+      "pix_T",
+      "noise_frac"
+    ],
+    "pix_T": 12,
+    "noise_frac": 2e-05,
+    "active_net_frac": 0.02,
+    "typing_min_busy": 0.25,
+    "typing_min_persist": 0.5,
+    "typing_min_net_frac": 0.0002,
+    "typing_max_h_frac": 0.08,
+    "active_pre_s": 0.5,
+    "active_hold_s": 1.0,
+    "edge_guard_s": 0.1,
+    "hwaccel": "none",
+    "threads": 0
+  },
+  "edit": {
+    "pad_ms": [
+      30,
+      200
+    ],
+    "silence_policy": "cut_all",
+    "silence_policy_note": "cut_all (user, 2026-10-29): every pause is cut, screen activity or not, unless the speaker announces a silent demo (range flagged keep_silence). keep_active = the original rule (active must_keep spans protected).",
+    "air_ms": {
+      "intro": 30,
+      "body": 90
+    },
+    "compact_gap_ms": {
+      "intro": 150,
+      "body": 175
+    },
+    "air_note": "air_ms: silence left at every join. compact_gap_ms: word-to-word pauses longer than this are cut down to air_ms. Intro = ranges whose beat starts with INTRO or whose source stem starts with 'intro'. Body 180 ms set by the user 2026-10-29 (v2 felt right for intro material; body a little slower). air_ms is only the fallback for clips without a loudness envelope.",
+    "tail_ms": {
+      "intro": 60,
+      "body": 100
+    },
+    "lead_ms": {
+      "intro": 40,
+      "body": 40
+    },
+    "envelope": {
+      "margin_db": 20,
+      "hold_ms": 100,
+      "max_tail_ms": 800,
+      "max_lead_ms": 300,
+      "edge_margin_db": 13
+    },
+    "tail_note": "User, 2026-10-29, after the first 1-hour run: no clipped word endings, ever. Every edge is placed on the clip's loudness envelope (silences.py writes E/silences/<stem>.envelope.json): sound = louder than the room floor + margin_db; a word has faded after hold_ms of quiet. tail_ms of air is left after the real fade and lead_ms before the real onset, so a join holds tail + lead (body 280 ms, intro 100 ms). An edge never extends past max_tail/max_lead or to within 40 ms of a word the range does not keep. Body tail 200 is the user's suggestion; it gets an A/B test.",
+    "fade_ms": 10,
+    "chunk_minutes": 15,
+    "phrase_silence_s": 0.5,
+    "timeline_view_max_per_chunk": 10,
+    "fix_passes_max": 1,
+    "pacing_note": "User, 2026-11-03, after claudesetup: the body felt sluggish; body join gap halved (tail 200->100, lead 80->40, so 140 ms per join; air 180->90; pauses over 175 ms cut, was 350). Intro unchanged.",
+    "envelope_note": "max_tail_ms 400 -> 800 (2026-11-03): 'approval' rang on 650 ms past its transcript end and the 400 ms cap chopped it. margin_db 12 -> 20 with the voice-band envelope (2026-11-03, user: body not punchy): the band-limited floor sits ~15 dB lower, so 12 dB let room echo count as speech. edge_margin_db 13 (2026-11-03): where a range's first/last word starts/ends uses this gentler line (soft final 's'), pauses still use margin_db. Envelope is high-pass only (sibilants kept)."
+  },
+  "render": {
+    "voice_filter": "highpass=f=80:poles=2,equalizer=f=220:t=q:w=1.0:g=-4,equalizer=f=450:t=q:w=1.5:g=-2,equalizer=f=3500:t=q:w=1.2:g=2.5,afftdn=nr=6:nf=-55:tn=1,acompressor=threshold=-24dB:ratio=2.5:attack=15:release=200:makeup=1",
+    "voice_filter_note": "User, 2026-11-05, picked from a blind-ish A/B (mictest_M3): MacBook mic, tone fix plus only a LIGHT denoise. 2-pole high-pass at 80 Hz, -4 dB at 220 Hz and -2 dB at 450 Hz (room boom/boxiness), +2.5 dB at 3.5 kHz (clarity), very light FFT denoise (nr 6: stronger settings made the voice sound robotic/warbly), gentle 2.5:1 compression. The denoiser delays audio ~25 ms; render_tutorial measures and cancels that. Replaces the 2026-11-03 chain (4-pole 100 Hz, -5 dB 220 Hz, +3 dB 3.5 kHz, afftdn nr 10, 3:1). Set to \"\" to turn off.",
+    "output": {
+      "size": [
+        3840,
+        2160
+      ],
+      "encoder": "hevc_videotoolbox",
+      "quality": 85,
+      "prio_speed": true,
+      "note": "User, 2026-11-19 (Rio 1 for OBS recordings): every video comes out 16:9 4K HEVC so YouTube streams it at its 4K bitrate. A 1080p recording is scaled up 2x (lanczos), a non-16:9 one gets black bars, never stretched. quality = hevc_videotoolbox constant quality (Rio 2.0 uses 80; 85 is higher). size null = the recording's own size, libx264 CRF 20 (the old Rio). prio_speed: the encoder's speed switch, 1.86x faster at 4K60 on the M3 with the same picture (SSIM 0.9997 vs without, same file size; 2026-11-19 bench)."
+    }
+  },
+  "verify": {
+    "duration_tolerance_s": 0.5,
+    "true_peak_max_dbtp": -1.0,
+    "av_sync_max_ms": 100,
+    "cut_ratio_flag": [
+      0.25,
+      0.7
+    ]
+  },
+  "budget": {
+    "max_extra_ram_mb": 2000,
+    "min_free_disk_gb": 15,
+    "token_budget_per_window": null,
+    "token_budget_note": "Pro window size isn't published. Leave null (warn only) until Phase 4 measurements set it."
+  },
+  "estimator_priors": {
+    "notes": "Rough starting guesses; replaced by history medians after the first runs.",
+    "transcribe_s_per_source_min": 4.0,
+    "detect_s_per_source_min": 3.0,
+    "render_s_per_output_megapixel_min": 6.0,
+    "verify_s_per_output_min": 2.0,
+    "llm_wall_s_per_chunk": 240,
+    "verifier_wall_s": 420,
+    "tokens_per_source_word_editor": 6.0,
+    "tokens_per_chunk_overhead": 40000,
+    "tokens_verifier": 120000,
+    "tokens_orchestrator": 80000,
+    "render_peak_rss_mb_per_megapixel": 250,
+    "words_per_source_min": 140,
+    "scribe_usd_per_hour": 0.21,
+    "spread": 0.35,
+    "scribe_usd_note": "Now AssemblyAI (2026-10-29). Third-party listings: Universal-2 about $0.15/h, Universal-3 Pro about $0.21/h. Confirm against the user's real bill.",
+    "render4k_s_per_output_gigapixel": 1.46,
+    "render4k_peak_rss_mb": 400,
+    "blur_s_per_output_min": 22.6,
+    "render4k_note": "2026-11-19 bench: 108 s of 1080p60 OBS-style video rendered to 4K HEVC q85 + prio_speed in 78.4 s (= 1.46 s per 1000 output-frame megapixels; ~43 s per output minute at 60 fps, ~22 at 30), peak 350 MB. blur: Rio 2.0 drive-organizer trial, 475 s for a 21-min edit at 1 s steps, 410 MB."
+  },
+  "blur": {
+    "sensitive": true,
+    "step_s": 1.0,
+    "private_folders": [
+      "Red Zone"
+    ],
+    "note": "User, 2026-11-17 (Rio 2.0) and 2026-11-19 (Rio 1): blur emails, phone numbers, API keys, IDs, KEY=value lines, an open Gmail pane and the whole screen inside a private folder automatically (blur_find.py --sensitive), every 1 s. Careful: only clearly sensitive text, never random words. Skipped when the user answers 'no' to 'Any sensitive info on screen?' (E/sensitive.json)."
+  }
+}

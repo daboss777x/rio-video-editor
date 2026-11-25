@@ -1,0 +1,11 @@
+{"source": {"duration_s": 3612, "width": 2560, "height": 1440, "fps": "30/1", "vfr": false},
+ "steps": {"transcribe": {"wall_s": [240, 330, 480], "peak_rss_mb": 180},
+           "detect": {"wall_s": [300, 420, 600], "peak_rss_mb": 420},
+           "edl": {"wall_s": [900, 1260, 1800], "peak_rss_mb": 300},
+           "render": {"wall_s": [1200, 1560, 2100], "peak_rss_mb": 1250},
+           "verify": {"wall_s": [60, 90, 150], "peak_rss_mb": 220},
+           "verifier": {"wall_s": [180, 240, 360], "peak_rss_mb": 300}},
+ "totals": {"wall_s": [3100, 4100, 5700], "tokens": {"main": 180000, "subagents": 420000, "total": [480000, 600000, 820000]},
+            "peak_extra_ram_mb": [1100, 1350, 1700], "scribe_usd": 0.4},
+ "calibration": {"runs_used": 3, "coefficients": {}},
+ "gate": {"ok": true, "reasons": []}}

@@ -1,0 +1,11 @@
+# Python packages for Rio (the versions it was built and tested with, on Python 3.13)
+numpy==2.5.4        # audio envelopes, frame comparisons
+pillow==13.0.0      # stills, contact sheets, blur previews
+requests==2.34.2    # AssemblyAI uploads and polling
+librosa==1.0.0      # used by video-use's timeline_view helper
+matplotlib==3.11.2  # used by video-use's timeline_view helper
+pytest==9.2.0       # the test suites
+# Added by SETUP.md only when needed on non-Mac systems:
+# pytesseract       # screen reader for the blur scan (needs the tesseract-ocr program)
+# opencv-python     # face detection for Rio 2.0 camera mode
+# psutil            # memory, battery and power checks

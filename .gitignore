@@ -1,0 +1,27 @@
+.venv/
+vendor/
+__pycache__/
+.pytest_cache/
+*.pyc
+.DS_Store
+.env
+# footage and renders never go in git
+input/*
+!input/.gitkeep
+output/*
+!output/.gitkeep
+runs/*
+!runs/.gitkeep
+**/tests/_fixtures/
+
+cache/*
+
+# runtime state (rewritten on every run)
+.claude/scheduled_tasks.lock
+.claude/settings.local.json
+.claude/skills/studio/floor/.*.json
+.claude/skills/studio/floor/.state.lock
+.claude/skills/studio/floor/state.json
+.claude/skills/studio/floor/state.js
+Reports/*
+!Reports/.gitkeep

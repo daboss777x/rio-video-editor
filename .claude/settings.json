@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(.venv/bin/python rio1/helpers/*)",
+      "Bash(.venv/bin/python rio1/helpers/revise.py *)",
+      "Bash(.venv/bin/python rio2/helpers/*)",
+      "Bash(.venv/bin/python rio2/helpers/revise.py *)",
+      "Bash(.venv/bin/python vendor/video-use/helpers/*)",
+      "Bash(.venv/bin/python .claude/skills/tutorial-edit/scripts/*)",
+      "Bash(.venv/bin/python .claude/skills/tutorial-edit-2/scripts/*)",
+      "Bash(python3 .claude/skills/studio/scripts/studio.py *)",
+      "Bash(ffprobe *)",
+      "Bash(mkdir -p *)",
+      "Bash(ls *)",
+      "Bash(jq *)",
+      "Read(/**)",
+      "Edit(/runs/**)",
+      "Agent(edl-editor)",
+      "Agent(edit-verifier)",
+      "Agent(blur-judge)",
+      "Skill(tutorial-edit)",
+      "Skill(tutorial-edit-2)"
+    ],
+    "deny": [
+      "Read(/.env)",
+      "Read(/.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Edit(**/.env)",
+      "Edit(**/.env.*)",
+      "Bash(*.env*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)",
+      "Bash(brew *)",
+      "Bash(brew)",
+      "Bash(git push *)",
+      "Bash(git push)",
+      "Bash(curl *)",
+      "Bash(wget *)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/skills/studio/scripts/usage.py\" statusline"
+  }
+}

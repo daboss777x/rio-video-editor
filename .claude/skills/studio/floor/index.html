@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1216; --panel:#161b21; --panel-2:#1c232b; --line:#262e37;
+  --text:#e9e6df; --muted:#8a939d; --amber:#f2a541; --teal:#2bb3a3; --red:#e5484d; --walnut:#8a5634;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{font:13px/1.45 "JetBrains Mono",ui-monospace,Menlo,monospace}
+header{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;padding:18px 20px 10px}
+header>*{min-width:0;max-width:100%}
+h1{font:700 24px/1.1 "Sora",system-ui,sans-serif;margin:0;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h1 .rec{width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px var(--amber)}
+h1 .rec.off{background:#3a4350;box-shadow:none}
+h1 .rec.fail{background:var(--red);box-shadow:0 0 10px var(--red)}
+.meta{display:flex;flex-wrap:wrap;gap:4px 18px;font:500 14px "Sora",system-ui,sans-serif;color:var(--muted);min-width:0}
+.meta b{color:var(--text);font-weight:500;overflow-wrap:anywhere}
+.right{margin-left:auto;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.live{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.live.stale .dot{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.live.off .dot{background:#555;box-shadow:none}
+.sound{font:600 11px "JetBrains Mono",monospace;letter-spacing:.04em;color:var(--muted);background:transparent;border:1px solid #333c46;border-radius:999px;padding:6px 12px;cursor:pointer}
+.sound.on{color:var(--teal);border-color:rgba(43,179,163,.5)}
+.sound.arm{color:var(--amber);border-color:rgba(242,165,65,.55)}
+#strip{list-style:none;margin:0;padding:0 20px 14px;display:flex;flex-wrap:wrap;gap:6px}
+#strip li{max-width:100%;overflow-wrap:anywhere;display:flex;align-items:center;gap:7px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:var(--panel);font-size:11.5px;color:var(--muted)}
+#strip li::before{content:"";width:7px;height:7px;border-radius:50%;background:#3a4350}
+#strip li.running{color:var(--text);border-color:rgba(242,165,65,.6);background:rgba(242,165,65,.1)}
+#strip li.running::before{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1s infinite alternate}
+#strip li.done{color:#bfe9e3}
+#strip li.done::before{background:var(--teal)}
+#strip li.failed{color:#ffb4b6;border-color:rgba(229,72,77,.6);background:rgba(229,72,77,.1)}
+#strip li.failed::before{background:var(--red)}
+#strip li.skipped{text-decoration:line-through;opacity:.6}
+#strip small{color:var(--muted)}
+@keyframes pulse{from{opacity:.45}to{opacity:1}}
+main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:16px;padding:0 20px 24px;align-items:start}
+@media (max-width:1040px){main{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){header,main{padding-left:16px;padding-right:16px}#strip{padding-left:16px;padding-right:16px}}
+/* .floorcol holds the canvas, then the legend; full-width panels can be appended below them. */
+.floorcol{display:flex;flex-direction:column;gap:0;min-width:0}
+.stage{position:relative;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:#000}
+#floor{display:block;width:100%;height:auto;image-rendering:pixelated}
+.hint{display:flex;flex-wrap:wrap;gap:4px 16px;color:var(--muted);font-size:11.5px;padding:8px 2px 0}
+.hint i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.tip{position:absolute;z-index:3;pointer-events:none;background:#0c0f13;border:1px solid #34404c;border-radius:6px;padding:9px 11px 10px;min-width:190px;max-width:280px;transform:translate(-50%,calc(-100% - 10px));display:none;box-shadow:0 12px 30px rgba(0,0,0,.55)}
+.tip .nm{font:700 15px "Sora",system-ui,sans-serif;display:block}
+.tip .rl{color:var(--muted);font-size:11.5px;display:block;margin-bottom:6px}
+.tip .tk{display:block;margin-top:5px;color:#d4d0c8;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border:1px solid;border-radius:999px}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.busy{color:var(--amber);border-color:rgba(242,165,65,.55);background:rgba(242,165,65,.1)}
+.pill.idle{color:#a9b3bf;border-color:#36404b;background:rgba(125,135,150,.08)}
+.pill.wait{color:#9fc3e6;border-color:rgba(110,165,215,.5);background:rgba(110,165,215,.1)}
+.pill.out{color:#6f7a86;border-color:#2c353f;background:transparent;border-style:dashed}
+.pill.lead{color:var(--teal);border-color:rgba(43,179,163,.5);background:rgba(43,179,163,.08)}
+.pill.wrap{color:#bfe9e3;border-color:var(--teal);background:rgba(43,179,163,.18)}
+.pill.fail{color:#ffb4b6;border-color:rgba(229,72,77,.6);background:rgba(229,72,77,.12)}
+.empty{position:absolute;inset:auto 12px 12px 12px;background:rgba(12,15,19,.93);border:1px dashed #44505c;border-radius:6px;padding:10px 12px;font-size:12px;color:#d4d0c8;display:none}
+.empty code{color:var(--amber)}
+aside{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.card h2{flex-wrap:wrap;margin:0;padding:11px 14px;font:700 11px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px}
+.card h2 span{color:var(--muted);letter-spacing:.04em;text-transform:none;font-weight:500}
+.leadbox{display:grid;grid-template-columns:44px minmax(0,1fr);gap:12px;padding:12px 14px}
+.leadbox canvas,#crew canvas{width:40px;height:52px;image-rendering:pixelated;background:#1f262e;border:1px solid #2c353f;border-radius:4px}
+.doing{margin-top:5px;font-size:12.5px;color:#d4d0c8;overflow-wrap:anywhere}
+.fc{padding:10px 14px 12px;display:flex;flex-direction:column;gap:12px}
+.fc .row{display:grid;grid-template-columns:88px minmax(0,1fr);gap:4px 10px;align-items:baseline}
+.fc .k{color:var(--muted);font-size:11.5px}
+.fc .v{font-size:12.5px;overflow-wrap:anywhere}
+.fc .v b{font-weight:700}
+.fc .sub{grid-column:2;color:var(--muted);font-size:11.5px}
+.fc .good{color:var(--teal)} .fc .bad{color:var(--red)} .fc .warn{color:var(--amber)}
+.bar{grid-column:1/-1;position:relative;height:10px;border-radius:999px;background:#0f1418;border:1px solid #29323c;overflow:hidden}
+.bar .band{position:absolute;top:0;bottom:0;background:rgba(43,179,163,.22)}
+.bar .mid{position:absolute;top:0;bottom:0;width:2px;background:var(--teal)}
+.bar .fill{position:absolute;top:2px;bottom:2px;left:0;border-radius:999px;background:var(--amber)}
+.bar.done .fill{background:var(--teal)} .bar.failed .fill{background:var(--red)}
+.fc .none{color:var(--muted);font-size:12px}
+.fc .none code{color:var(--amber)}
+.gate{border:1px solid rgba(242,165,65,.5);background:rgba(242,165,65,.08);border-radius:6px;padding:7px 9px;font-size:11.5px;color:#f6d39f}
+#crew{list-style:none;margin:0;padding:0}
+#crew li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:10px;padding:9px 14px;border-bottom:1px solid var(--line)}
+#crew li:last-child{border-bottom:0}
+#crew li.hl{background:var(--panel-2)}
+.who{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.who b{font:700 14.5px "Sora",system-ui,sans-serif}
+.who small{color:var(--muted);font-size:11px}
+.row2{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.task{margin-top:4px;color:#d4d0c8;font-size:12px;overflow-wrap:anywhere}
+.task.dim{color:var(--muted)}
+.step{margin-top:2px;color:#6d7782;font-size:11px}
+#feed{list-style:none;margin:0;padding:6px 0;max-height:300px;overflow:auto}
+#feed li{padding:5px 14px;font-size:12px;color:#d4d0c8;display:grid;grid-template-columns:62px minmax(0,1fr);gap:8px}
+#feed time{color:var(--muted)}
+#feed b{font-weight:700}
+#feed .none{display:block;color:var(--muted)}
+/* Session panel: under the floor + legend */
+.session{margin-top:14px}
+.sess{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.sx{padding:12px 14px;border-top:1px solid var(--line);min-width:0}
+.sess .sx:first-child{border-top:0}
+@media (min-width:600px){.sess .sx{border-top:0;border-left:1px solid var(--line)}.sess .sx:first-child{border-left:0}}
+.sx h3{margin:0 0 8px;font:700 10.5px "JetBrains Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.sx p{margin:0 0 6px;overflow-wrap:anywhere}
+.sx .desc{font:500 14px/1.4 "Sora",system-ui,sans-serif;color:var(--text)}
+.sx .dim,.sx .note{color:var(--muted);font-size:11.5px}
+.sx .err{color:#ffb4b6;font-size:11.5px}
+.sx code{color:var(--amber);overflow-wrap:anywhere}
+.big{font:700 24px/1.1 "Sora",system-ui,sans-serif}
+.big small{font:500 11.5px "JetBrains Mono",monospace;color:var(--muted);margin-left:6px}
+.meter{position:relative;height:10px;border-radius:999px;background:#0f1418;border:1px solid #29323c;overflow:hidden;margin:9px 0 8px}
+.meter i{position:absolute;top:2px;bottom:2px;left:2px;border-radius:999px;background:var(--teal);max-width:calc(100% - 4px)}
+.meter.warm i{background:var(--amber)} .meter.hot i{background:var(--red)}
+.tk4{display:grid;grid-template-columns:auto auto;justify-content:start;gap:2px 14px;font-size:12px;margin-top:8px}
+.tk4 span{color:var(--muted)}
+.stack{display:flex;height:12px;border-radius:999px;background:#0f1418;border:1px solid #29323c;margin:2px 0 10px;overflow:hidden}
+.stack i{display:block;height:100%;min-width:2px}
+.shares{list-style:none;margin:0;padding:0;font-size:12px}
+.shares li{display:grid;grid-template-columns:10px minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:3px 0}
+.shares .sw{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.shares .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shares .n small{color:var(--muted)}
+.shares .p{font-weight:700;text-align:right}
+.shares .t{color:var(--muted);text-align:right;min-width:48px}
+</style>
+<script src="cast.js"></script>
+<script src="map.js"></script>
+</head>
+<body>
+<header>
+  <h1><span class="rec off" id="rec"></span>The Studio</h1>
+  <div class="meta">
+    <span>Video: <b id="video">no run yet</b></span>
+    <span>Stage: <b id="nowStage">-</b></span>
+  </div>
+  <div class="right">
+    <button class="sound" id="sound" type="button" title="Plays a clapperboard and a wrap chime when the run finishes">Sound on</button>
+    <div class="live off" id="live"><span class="dot"></span><span id="liveText">Waiting for a run…</span></div>
+  </div>
+</header>
+<ol id="strip" aria-label="Pipeline stages"></ol>
+<main>
+  <div class="floorcol" id="floorcol">
+    <div class="stage" id="stageBox">
+      <canvas id="floor" aria-label="Pixel-art studio showing the editing crew at work"></canvas>
+      <div class="tip" id="tip"></div>
+      <div class="empty" id="empty">No run on the board yet. The pipeline starts one with <code>studio.py reset "Video name" --estimate E/estimate.json</code>. To watch a fake run, play <code>scripts/demo.sh</code>.</div>
+    </div>
+    <div class="hint">
+      <span><i style="background:#f2a541"></i>Working: seated at the round table</span>
+      <span><i style="background:#7d8796"></i>On a break: couch, espresso bar, booth, skylight</span>
+      <span>Hover anyone for their role and task</span>
+    </div>
+    <section class="card session" id="session" aria-label="Session">
+      <h2>Session <span id="sessAge"></span></h2>
+      <div class="sess">
+        <div class="sx" id="sxAbout"></div>
+        <div class="sx" id="sxSpend"></div>
+        <div class="sx" id="sxShare"></div>
+      </div>
+    </section>
+  </div>
+  <aside>
+    <section class="card"><h2>Lead editor <span id="leadPill"></span></h2>
+      <div class="leadbox"><canvas id="leadAv" width="48" height="64"></canvas>
+        <div><div class="who"><b id="leadName"></b><small id="leadRole"></small></div><div class="doing" id="leadDoing">Waiting for a run</div></div>
+      </div>
+    </section>
+    <section class="card"><h2>Forecast vs actual <span id="fcState"></span></h2><div class="fc" id="fc"></div></section>
+    <section class="card"><h2>Crew <span id="counts"></span></h2><ul id="crew"></ul></section>
+    <section class="card"><h2>Activity <span>latest first</span></h2><ol id="feed"></ol></section>
+  </aside>
+</main>
+
+<script>
+(() => {
+'use strict';
+const CAST = window.STUDIO_CAST;
+const M = window.STUDIO_MAP;
+const IDS = Object.keys(CAST).filter(k => k !== 'lead');
+const POLL_MS = 2000;
+const IDLE_CLOCK_OUT_S = 600; // idle (not busy) this long -> clocked out, gone from the floor; busy brings them back
+// Relay crew: someone with a stage still to come in this run stays seated ("waiting for next call") and never clocks out.
+// Pure function of the board (stage statuses + run end), so it costs nothing to compute. Mirrored in studio.py crew_waiting().
+const WAIT_STAGES = { transcriber: ['transcribe'], watcher: ['screen'], story: ['edit'], render: ['render'], qc: ['qc'], archivist: ['report', 'archive'] };
+const WAIT_FIX = ['story', 'render', 'qc'];   // the fix pass can call these back until the fix stage is done / skipped
+function crewWaiting(s, id) {
+  if (!s || s.ended_at || s.lead?.done_at || s.lead?.failed_at || !WAIT_STAGES[id]) return false;
+  const st = k => s.stages?.[k]?.status || 'pending';
+  const open = k => st(k) === 'pending' || st(k) === 'running';
+  if (id === 'archivist' && st('render') === 'pending') return false;   // records the run at the end: not seated for the whole run
+  return WAIT_STAGES[id].some(open) || (WAIT_FIX.includes(id) && st('fix') === 'pending');
+}
+function clockedOut(info, waiting) {
+  if (!info || info.status === 'busy' || waiting) return false;
+  const ref = Date.parse(info.since || STATE?.started_at || '');
+  return !isNaN(ref) && (Date.now() - ref) / 1000 >= IDLE_CLOCK_OUT_S;
+}
+function syncClock(a) {
+  const out = clockedOut(a.info, a.waiting);
+  if (out === !!a.out) return;
+  a.out = out; release(a); a.path = []; a.onArrive = null;
+  if (out) { a.mode = 'free'; a.pose = 'stand'; a.hit = null; } else teleport(a, a.info.status === 'busy' ? 'busy' : 'idle');   // teleport seats a waiting member too
+}
+const { T, COLS, ROWS, SEATS, VISIT, findPath } = M;
+const W = COLS * T, H = ROWS * T;
+const tx = c => c * T + 4;
+const ty = r => r * T + 7;
+const STAGES = [
+  ['forecast', 'Forecast', 'FCAST'], ['transcribe', 'Transcribe', 'SCRIBE'], ['screen', 'Screen check', 'SCREEN'],
+  ['edit', 'Edit', 'EDIT'], ['render', 'Render', 'RENDER'], ['qc', 'QC', 'QC'], ['fix', 'Fix pass', 'FIX'],
+  ['report', 'Report', 'REPORT'], ['archive', 'Archive', 'ARCHIVE'],
+];
+const ACTS = M.ACTIVITIES.map(a => ({ ...a, spots: a.spots.map(s => ({ ...s, by: null })) }));
+
+// ---------------------------------------------------------------- canvas
+const cv = document.getElementById('floor');
+const g = cv.getContext('2d');
+let S = 3, bg = null;
+function resize() {
+  const w = cv.parentElement.clientWidth || W * 3;
+  S = Math.max(2, Math.round(w * (window.devicePixelRatio || 1) / W));
+  cv.width = W * S; cv.height = H * S;
+  g.imageSmoothingEnabled = false; bg = null;
+}
+window.addEventListener('resize', resize);
+const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+
+// 3×5 pixel font for the wall screen and signs
+const GLYPHS = {
+  A:'010101111101101',B:'110101110101110',C:'011100100100011',D:'110101101101110',E:'111100110100111',F:'111100110100100',
+  G:'011100101101011',H:'101101111101101',I:'111010010010111',J:'001001001101010',K:'101101110101101',L:'100100100100111',
+  M:'101111111101101',N:'110101101101101',O:'010101101101010',P:'110101110100100',Q:'010101101110011',R:'110101110101101',
+  S:'011100010001110',T:'111010010010010',U:'101101101101111',V:'101101101101010',W:'101101111111101',X:'101101010101101',
+  Y:'101101010010010',Z:'111001010100111','0':'111101101101111','1':'010110010010111','2':'110001010100111','3':'110001010001110',
+  '4':'101101111001001','5':'111100110001110','6':'011100111101111','7':'111001010010010','8':'111101111101111','9':'111101111001110',
+  '/':'001001010100100','-':'000000111000000','.':'000000000000010',':':'000010000010000','!':'010010010000010',"'":'010010000000000',' ':'000000000000000',
+};
+const textW = (s, k = 1) => (s.length * 4 - 1) * k;
+function pxText(ctx, str, x, y, c, k = 1) {
+  ctx.fillStyle = c; let cx = x;
+  for (const ch of String(str).toUpperCase()) {
+    const gl = GLYPHS[ch] || GLYPHS[' '];
+    for (let i = 0; i < 15; i++) if (gl[i] === '1') ctx.fillRect(cx + (i % 3) * k, y + ((i / 3) | 0) * k, k, k);
+    cx += 4 * k;
+  }
+}
+
+// ---------------------------------------------------------------- characters
+// Sprite box 12×22; (x, y) is the feet centre. Looks come from cast.js only.
+function isDark(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 115;
+}
+function drawChar(ctx, ch, x, y, pose, t, back) {
+  const X = Math.round(x) - 6, Y = Math.round(y) - 21;
+  const P = (px, py, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(X + px, Y + py, w, h); };
+  const hair = ch.hairColor, skin = ch.skin, shade = ch.skinShade, ex = ch.extras || [];
+  const walking = pose === 'walk';
+  const step = walking ? Math.floor(t / 140) % 2 : -1;
+  const seated = pose === 'type' || pose === 'sitback' || pose === 'recline';
+  const sleeve = ch.outfit === 'vest' ? ch.under : ch.shirt;
+  const blink = (t % 4100) < 120;
+
+  if (!back) {
+    if (ch.hair === 'wavy') { P(1, 3, 10, 12, hair); P(0, 7, 1, 6, hair); P(11, 7, 1, 6, hair); }
+    if (ch.hair === 'braids') { P(1, 3, 2, 12, hair); P(9, 3, 2, 12, hair); P(1, 15, 2, 1, ch.accent); P(9, 15, 2, 1, ch.accent); }
+  }
+  // legs
+  if (seated) P(2, 17, 8, 2, ch.pants);
+  else {
+    const l = step === 0 ? 1 : 0, r = step === 1 ? 1 : 0;
+    P(3, 17, 3, 3 - l, ch.pants); P(6, 17, 3, 3 - r, ch.pants);
+    P(2, 20 - l, 4, 1, ch.shoes); P(6, 20 - r, 4, 1, ch.shoes);
+  }
+  // torso
+  if (ch.outfit === 'vest') { P(2, 11, 8, 6, ch.under); P(3, 11, back ? 6 : 2, 6, ch.shirt); if (!back) P(7, 11, 2, 6, ch.shirt); }
+  else P(2, 11, 8, 6, ch.shirt);
+  if (ch.outfit === 'labcoat') P(2, 17, 8, seated ? 1 : 2, ch.shirt);
+  if (ch.outfit === 'overalls') { P(3, 13, 6, 4, ch.pants); P(3, 11, 1, 2, ch.pants); P(8, 11, 1, 2, ch.pants); if (!back) { P(3, 13, 1, 1, '#e0c060'); P(8, 13, 1, 1, '#e0c060'); P(5, 14, 2, 1, ch.hatColor || '#f2a541'); } }
+  if (!back) {
+    switch (ch.outfit) {
+      case 'blazer': P(4, 11, 4, 4, ch.under); P(3, 11, 1, 5, ch.shirtShade); P(8, 11, 1, 5, ch.shirtShade); P(6, 15, 1, 1, ch.shirtShade); break;
+      case 'cardigan': P(5, 11, 2, 6, ch.under); P(4, 11, 1, 6, ch.shirtShade); P(7, 11, 1, 6, ch.shirtShade); break;
+      case 'hoodie': P(3, 10, 2, 1, ch.shirtShade); P(7, 10, 2, 1, ch.shirtShade); P(5, 11, 1, 2, '#efe9f7'); P(6, 11, 1, 2, '#efe9f7'); P(4, 14, 4, 2, ch.shirtShade); break;
+      case 'turtleneck': P(4, 10, 4, 1, ch.shirt); P(4, 11, 4, 1, ch.shirtShade); P(2, 16, 8, 1, ch.shirtShade); break;
+      case 'polo': P(4, 11, 1, 1, '#e9eef2'); P(7, 11, 1, 1, '#e9eef2'); P(5, 11, 2, 1, ch.shirtShade); P(6, 12, 1, 2, ch.shirtShade); P(2, 16, 8, 1, ch.shirtShade); break;
+      case 'labcoat': P(5, 11, 2, 6, ch.under); P(4, 11, 1, 5, ch.shirtShade); P(7, 11, 1, 5, ch.shirtShade); P(8, 14, 2, 1, ch.shirtShade); P(8, 13, 1, 1, '#2f5d8c'); break;
+      case 'vest': P(2, 16, 8, 1, ch.shirtShade); P(5, 13, 1, 1, '#d8c38a'); P(5, 15, 1, 1, '#d8c38a'); break;
+      case 'tee': P(5, 11, 2, 1, shade); break;
+    }
+    if (ex.includes('badge')) { P(3, 12, 2, 2, '#2bb3a3'); P(3, 12, 1, 1, '#bff3ec'); }
+    if (ex.includes('bowtie')) { P(4, 11, 4, 1, '#9e2a24'); P(5, 11, 2, 1, '#c23a30'); }
+  } else if (ch.outfit === 'hoodie') P(3, 10, 6, 2, ch.shirtShade);
+
+  // arms
+  const arm = (x0, rows) => { P(x0, 11, 1, rows, sleeve); if ((ch.outfit === 'tee' || ch.outfit === 'overalls') && rows > 2) P(x0, 13, 1, rows - 2, skin); };
+  const hand = (hx, hy) => P(hx, hy, 1, 1, skin);
+  if (walking) { const a = step === 0 ? 1 : 0; arm(1, 5 - a); hand(1, 16 - a); arm(10, 4 + a); hand(10, 15 + a); }
+  else if (pose === 'type') {
+    const k = Math.floor(t / 110) % 2;
+    arm(1, 3); arm(10, 3); P(2, 14, 2, 1, sleeve); P(8, 14, 2, 1, sleeve); hand(4, 14 + k); hand(7, 15 - k);
+  } else if (pose === 'drink') {
+    arm(1, 5); hand(1, 16);
+    const cup = '#efe9df';
+    if ((t % 3400) < 1100 && !back) { P(10, 11, 1, 1, sleeve); P(9, 9, 1, 2, skin); P(7, 8, 2, 2, cup); P(7, 8, 2, 1, '#6b4a2f'); }
+    else { arm(10, 2); hand(10, 13); P(8, 12, 2, 2, cup); }
+  } else if (pose === 'phone') {
+    arm(1, 3); arm(10, 3); P(2, 14, 3, 1, sleeve); P(7, 14, 3, 1, sleeve);
+    P(5, 12, 2, 3, '#222'); P(5, 12, 2, 2, (t % 900) < 450 ? '#7fe0d4' : '#a6efe6'); hand(4, 14); hand(7, 14);
+  } else if (pose === 'stretch') {
+    const up = Math.floor(t / 900) % 2;
+    P(1, 5 + up, 1, 6 - up, sleeve); P(10, 5 + up, 1, 6 - up, sleeve); hand(1, 4 + up); hand(10, 4 + up);
+  } else if (pose === 'mic') {
+    arm(1, 5); hand(1, 16); P(10, 8, 1, 4, sleeve); hand(10, 7);
+  } else if (pose === 'recline') {
+    P(0, 4, 2, 7, sleeve); P(10, 4, 2, 7, sleeve); P(0, 2, 1, 2, sleeve); P(11, 2, 1, 2, sleeve);
+  } else if (pose === 'clipboard') {
+    arm(10, 5); hand(10, 16); arm(1, 3); P(1, 12, 3, 4, '#2b2b31'); P(2, 12, 2, 3, '#f2a541'); P(2, 13, 2, 1, '#1c1d22'); hand(3, 15);
+  } else { arm(1, 5); arm(10, 5); hand(1, 16); hand(10, 16); }
+
+  // head
+  P(5, 10, 2, 1, shade);
+  P(2, 2, 8, 8, skin);
+  P(1, 5, 1, 2, skin); P(10, 5, 1, 2, skin);
+  const s = ch.hair;
+  if (back) {
+    if (s === 'wavy') P(1, 1, 10, 12, hair);
+    else if (s === 'bob') P(1, 1, 10, 9, hair);
+    else if (s === 'bun') { P(2, 1, 8, 7, hair); P(4, -1, 4, 2, hair); }
+    else if (s === 'braids') { P(1, 1, 10, 5, hair); P(1, 6, 2, 9, hair); P(4, 6, 1, 9, hair); P(7, 6, 1, 9, hair); P(9, 6, 2, 9, hair); P(4, 15, 1, 1, ch.accent); P(7, 15, 1, 1, ch.accent); }
+    else if (s === 'beret') { P(2, 2, 8, 6, hair); P(1, 0, 10, 3, ch.hatColor); P(0, 1, 1, 2, ch.hatColor); P(5, -1, 2, 1, ch.hatColor); }
+    else if (s === 'cap') { P(2, 3, 8, 5, hair); P(2, 0, 8, 3, ch.hatColor); P(3, 3, 6, 2, '#c9822a'); }
+    else P(2, 1, 8, 6, hair);
+  } else {
+    const eye = '#1d1411';
+    if (blink && pose !== 'recline') { P(3, 6, 2, 1, shade); P(7, 6, 2, 1, shade); }
+    else {
+      if (isDark(skin)) { P(3, 6, 2, 1, '#efe9df'); P(7, 6, 2, 1, '#efe9df'); }
+      P(4, 6, 1, 1, eye); P(7, 6, 1, 1, eye);
+    }
+    if (pose === 'recline') { P(3, 6, 2, 1, shade); P(7, 6, 2, 1, shade); P(4, 8, 4, 1, '#8a3b2f'); }
+    else if (ch.beard) { P(2, 7, 1, 2, hair); P(9, 7, 1, 2, hair); P(3, 8, 6, 2, hair); P(5, 8, 2, 1, shade); }
+    else P(5, 8, 2, 1, '#8a3b2f');
+    switch (s) {
+      case 'short': P(2, 1, 8, 2, hair); P(2, 3, 2, 1, hair); P(8, 3, 2, 1, hair); P(1, 2, 1, 3, hair); P(10, 2, 1, 3, hair); break;
+      case 'side': P(2, 1, 8, 2, hair); P(2, 3, 5, 1, hair); P(2, 4, 2, 1, hair); P(1, 2, 1, 3, hair); P(10, 2, 1, 2, hair); break;
+      case 'wavy': P(3, 0, 6, 1, hair); P(2, 1, 8, 2, hair); P(1, 2, 2, 10, hair); P(9, 2, 2, 10, hair); P(3, 3, 3, 1, hair); break;
+      case 'bob': P(1, 1, 10, 3, hair); P(1, 4, 2, 6, hair); P(9, 4, 2, 6, hair); break;
+      case 'bun': P(4, -1, 4, 2, hair); P(2, 1, 8, 2, hair); P(2, 3, 1, 2, hair); P(9, 3, 1, 2, hair); break;
+      case 'braids': P(2, 1, 8, 2, hair); P(2, 3, 2, 1, hair); P(8, 3, 2, 1, hair); P(6, 1, 1, 2, shade); break;
+      case 'beret': P(1, 3, 1, 3, hair); P(10, 3, 1, 3, hair); P(1, 0, 10, 3, ch.hatColor); P(0, 1, 1, 2, ch.hatColor); P(5, -1, 2, 1, ch.hatColor); P(2, 2, 8, 1, '#3a3a42'); break;
+      case 'cap': P(2, 0, 8, 3, ch.hatColor); P(5, 2, 2, 1, hair); P(2, 3, 1, 2, hair); P(9, 3, 1, 2, hair); P(2, 0, 8, 1, '#ffd08a'); break;
+    }
+    if (ex.includes('glasses')) { const gc = ch.glassesColor || '#141414'; P(3, 5, 6, 1, gc); P(3, 6, 1, 1, gc); P(8, 6, 1, 1, gc); P(5, 6, 2, 1, gc); }
+    if (ex.includes('earrings')) { P(1, 7, 1, 1, '#f2c14e'); P(10, 7, 1, 1, '#f2c14e'); }
+  }
+  if (ex.includes('cans') || pose === 'mic') {
+    const cc = ch.cansColor || '#2b2e35';
+    P(2, -1, 8, 1, '#22262c'); P(1, 0, 1, 3, '#22262c'); P(10, 0, 1, 3, '#22262c'); P(0, 3, 2, 4, cc); P(10, 3, 2, 4, cc);
+  }
+}
+
+// ---------------------------------------------------------------- actors
+let clock = 0;
+const rand = (a, b) => a + Math.random() * (b - a);
+const SPEED = 30;
+class Actor {
+  constructor(id) {
+    this.id = id; this.ch = CAST[id];
+    this.c = 22; this.r = 23; this.x = tx(this.c); this.y = ty(this.r);
+    this.path = []; this.onArrive = null; this.mode = 'free'; this.pose = 'stand'; this.facing = 'front';
+    this.spot = null; this.act = null; this.until = 0; this.want = 'idle'; this.waiting = false; this.info = {};
+    this.phase = Math.random() * 10000; this.hit = null;
+  }
+  placeAt(c, r) { this.c = c; this.r = r; this.x = tx(c); this.y = ty(r); this.path = []; this.onArrive = null; }
+  goTo(c, r, done) {
+    this.path = findPath(this.c, this.r, c, r) || [];
+    this.onArrive = done || null;
+    if (!this.path.length) { this.onArrive = null; done && done(); }
+  }
+  update(dt) {
+    if (!this.path.length) return;
+    const [nc, nr] = this.path[0];
+    const gx = tx(nc), gy = ty(nr), dx = gx - this.x, dy = gy - this.y, d = Math.hypot(dx, dy), st = SPEED * dt;
+    if (dy < -0.01) this.facing = 'back'; else if (dy > 0.01) this.facing = 'front';
+    if (d <= st) {
+      this.x = gx; this.y = gy; this.c = nc; this.r = nr; this.path.shift();
+      if (!this.path.length) { const f = this.onArrive; this.onArrive = null; f && f(); }
+    } else { this.x += dx / d * st; this.y += dy / d * st; }
+  }
+  get walking() { return this.path.length > 0; }
+}
+const actors = {};
+for (const id of IDS) actors[id] = new Actor(id);
+const rio = new Actor('lead');
+rio.placeAt(SEATS.lead.c, SEATS.lead.r); rio.mode = 'desk'; rio.pose = 'type'; rio.nextVisit = 8000;
+
+function release(a) { if (a.spot) { a.spot.by = null; a.spot = null; a.act = null; } }
+function chooseSpot(a) {
+  const options = [];
+  for (const act of ACTS) {
+    if (a.lastAct === act.id && Math.random() < 0.75) continue;
+    for (const s of act.spots) if (!s.by) for (let i = 0; i < act.w; i++) options.push([act, s]);
+  }
+  return options.length ? options[(Math.random() * options.length) | 0] : null;
+}
+function claim(a, act, s) { s.by = a.id; a.spot = s; a.act = act; a.lastAct = act.id; }
+function startActivity(a) {
+  release(a);
+  const pick = chooseSpot(a);
+  if (!pick) { a.mode = 'free'; a.pose = 'stand'; return; }
+  const [act, s] = pick; claim(a, act, s);
+  a.mode = 'toActivity';
+  a.goTo(s.c, s.r, () => { a.mode = 'activity'; a.pose = s.pose; a.until = clock + rand(22, 50) * 1000; });
+}
+function goToSeat(a) {
+  release(a);
+  const st = SEATS[a.ch.seat];
+  a.mode = 'toSeat';
+  a.goTo(st.c, st.r, () => { if (a.want !== 'busy' && a.waiting) { a.mode = 'wait'; a.pose = 'sitback'; } else { a.mode = 'seat'; a.pose = 'type'; } });
+}
+function think(a) {
+  if (a.want === 'busy') { if (a.mode !== 'toSeat' && a.mode !== 'seat') goToSeat(a); return; }
+  if (a.waiting) {   // still has work coming later in this run: stay at the desk, leaned back
+    if (a.mode === 'seat') { a.mode = 'wait'; a.pose = 'sitback'; }
+    else if (a.mode !== 'wait' && a.mode !== 'toSeat') goToSeat(a);
+    return;
+  }
+  if (a.mode === 'activity' && clock > a.until) a.mode = 'free';
+  if (a.mode === 'toSeat' || a.mode === 'seat' || a.mode === 'wait' || a.mode === 'free') startActivity(a);
+}
+function teleport(a, status) {
+  if (status === 'busy' || a.waiting) {
+    release(a); const st = SEATS[a.ch.seat]; a.placeAt(st.c, st.r);
+    if (status === 'busy') { a.mode = 'seat'; a.pose = 'type'; } else { a.mode = 'wait'; a.pose = 'sitback'; }
+    return;
+  }
+  release(a);
+  const pick = chooseSpot(a);
+  if (!pick) { a.placeAt(22, 23); a.mode = 'free'; return; }
+  const [act, s] = pick; claim(a, act, s);
+  a.placeAt(s.c, s.r); a.mode = 'activity'; a.pose = s.pose; a.until = clock + rand(6, 40) * 1000;
+}
+
+const wrapped = () => !!STATE?.lead?.done_at && !IDS.some(id => actors[id].want === 'busy');
+const failed = () => !!STATE?.lead?.failed_at;
+function thinkRio() {
+  const d = rio, home = SEATS.lead;
+  const atDesk = d.mode === 'desk' || d.mode === 'recline' || d.mode === 'halt';
+  if (wrapped() || failed()) {
+    const want = wrapped() ? 'recline' : 'halt';
+    if (atDesk) { d.mode = want; d.pose = want === 'recline' ? 'recline' : 'stand'; }
+    else if (d.mode !== 'toDesk') { d.mode = 'toDesk'; d.visiting = null; d.goTo(home.c, home.r, () => { d.mode = 'desk'; d.pose = 'type'; }); }
+    return;
+  }
+  if (d.mode === 'recline' || d.mode === 'halt') { d.mode = 'desk'; d.pose = 'type'; d.nextVisit = clock + 6000; }
+  if (d.mode === 'desk' && clock > d.nextVisit) {
+    const seated = IDS.map(id => actors[id]).filter(a => a.mode === 'seat');
+    if (seated.length) {
+      const a = seated[(Math.random() * seated.length) | 0];
+      const [c, r] = VISIT[a.ch.seat];
+      d.mode = 'toVisit'; d.visiting = a;
+      d.goTo(c, r, () => { d.mode = 'visit'; d.pose = 'clipboard'; d.until = clock + 5500; });
+    } else d.nextVisit = clock + 12000;
+  }
+  if (d.mode === 'visit' && (clock > d.until || d.visiting?.mode !== 'seat')) {
+    d.mode = 'toDesk'; d.visiting = null;
+    d.goTo(home.c, home.r, () => { d.mode = 'desk'; d.pose = 'type'; d.nextVisit = clock + rand(16, 32) * 1000; });
+  }
+}
+
+// ---------------------------------------------------------------- scenery (static)
+function buildBackground() {
+  bg = document.createElement('canvas'); bg.width = W; bg.height = H;
+  const b = bg.getContext('2d');
+  const r = (x, y, w, h, c) => { b.fillStyle = c; b.fillRect(x, y, w, h); };
+  // graphite floor with large-format tile seams
+  r(0, 0, W, H, '#2b3038');
+  for (let y = 40; y < H; y += 16) r(0, y, W, 1, '#262a31');
+  for (let x = 0; x < W; x += 24) for (let y = 40; y < H; y += 16) r(x + ((y / 16) % 2) * 12, y, 1, 16, '#262a31');
+  for (let i = 0; i < 90; i++) r((i * 97) % W, 40 + (i * 53) % (H - 40), 1, 1, '#31363f');
+  // Rio's office: walnut parquet + rug
+  r(8, 40, 96, 64, '#5b3a26');
+  for (let y = 40, i = 0; y < 104; y += 4, i++) { r(8, y + 3, 96, 1, '#4e3120'); for (let x = 8 + (i % 2) * 8; x < 104; x += 16) r(x, y, 1, 3, '#4e3120'); }
+  r(24, 76, 58, 20, '#1f3b40'); r(26, 78, 54, 16, '#25474d'); r(26, 85, 54, 1, '#f2a541');
+  // teal round rug under the table
+  b.fillStyle = '#1b3236'; b.beginPath(); b.arc(220, 134, 50, 0, Math.PI * 2); b.fill();
+  b.strokeStyle = '#2b5a60'; b.lineWidth = 2; b.beginPath(); b.arc(220, 134, 46, 0, Math.PI * 2); b.stroke();
+  // sound booth carpet
+  r(8, 168, 72, 64, '#22252b');
+  for (let x = 8; x < 80; x += 4) for (let y = 168; y < 232; y += 4) if ((x + y) % 8 === 0) r(x, y, 1, 1, '#2a2e35');
+  // screening rug
+  r(264, 196, 88, 32, '#33282a'); r(266, 198, 84, 28, '#3d2f31');
+  // espresso corner tiles
+  r(376, 120, 32, 64, '#30353d');
+  for (let y = 120; y < 184; y += 8) for (let x = 376; x < 408; x += 8) if (((x + y) / 8) % 2 === 0) r(x, y, 8, 8, '#353b44');
+  // top wall: deep slate with acoustic slats
+  r(0, 0, W, 40, '#1a1e24'); r(0, 0, W, 2, '#101317');
+  for (let x = 4; x < W; x += 6) r(x, 2, 1, 34, '#1f242b');
+  r(0, 36, W, 4, '#14171c');
+  r(0, 37, W, 1, '#f2a541');                       // amber LED strip along the baseboard
+  b.fillStyle = 'rgba(242,165,65,.10)'; b.fillRect(0, 40, W, 3);
+  // side + bottom walls
+  r(0, 40, 6, H - 40, '#1a1e24'); r(6, 40, 2, H - 40, '#14171c');
+  r(W - 6, 40, 6, H - 40, '#1a1e24'); r(W - 8, 40, 2, H - 40, '#14171c');
+  r(0, H - 6, W, 6, '#1a1e24'); r(0, H - 7, W, 1, '#2bb3a3');                    // teal accent strip
+  r(184, H - 6, 16, 6, '#3d2a1c'); r(186, H - 5, 12, 5, '#5b3a26'); r(191, H - 4, 1, 2, '#f2a541');   // entrance
+  // acoustic felt panels between the monitor wall and the timeline screen
+  for (let i = 0; i < 2; i++) { r(96 + i * 5, 8, 4, 24, '#1f4a4e'); r(96 + i * 5, 8, 4, 1, '#2b5f63'); }
+  // framed clapperboard on Rio's wall
+  r(72, 7, 22, 22, '#6b4a2f'); r(73, 8, 20, 20, '#d9c9a6'); r(75, 14, 16, 12, '#1a1a1d');
+  for (let i = 0; i < 4; i++) r(75 + i * 4, 10, 2, 3, '#f2f2f2'), r(77 + i * 4, 10, 2, 3, '#1a1a1d');
+  r(76, 17, 8, 1, '#e9e6df'); r(76, 20, 12, 1, '#7a8a95'); r(76, 23, 6, 1, '#7a8a95');
+  // signs on the right wall: housings
+  r(379, 4, 29, 13, '#0b0d10'); r(380, 19, 27, 12, '#0b0d10');
+}
+
+function skylightTone() {
+  const h = new Date().getHours();
+  if (h >= 7 && h < 17) return ['rgba(255,236,190,.20)', 'rgba(255,246,220,.12)'];
+  if (h >= 17 && h < 19 || h >= 5 && h < 7) return ['rgba(255,170,90,.18)', 'rgba(255,200,140,.10)'];
+  return ['rgba(130,160,255,.10)', 'rgba(160,190,255,.06)'];
+}
+function drawSkylight() {
+  const [a, b2] = skylightTone();
+  g.fillStyle = a; g.fillRect(120, 178, 56, 40);
+  g.fillStyle = b2; g.fillRect(114, 174, 68, 48);
+  R(147, 178, 2, 40, 'rgba(0,0,0,.10)'); R(120, 197, 56, 2, 'rgba(0,0,0,.10)');
+}
+
+// ---------------------------------------------------------------- scenery (live)
+let STATE = null;
+const stageOf = k => STATE?.stages?.[k] || { status: 'pending', note: '' };
+const crewBusy = id => actors[id]?.want === 'busy';
+const renderHot = () => crewBusy('render') || stageOf('render').status === 'running';
+function hash(i, j) { let h = (i * 374761393 + j * 668265263) | 0; h = (h ^ (h >>> 13)) * 1274126177; return ((h ^ (h >>> 16)) >>> 0) / 4294967295; }
+function fraction(note) { const m = /(\d+)\s*\/\s*(\d+)/.exec(note || ''); return m ? [+m[1], +m[2]] : null; }
+function mmss(iso) {
+  if (!iso) return '';
+  const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+  if (s >= 6000) return `${Math.floor(s / 3600)}H${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`;
+  return `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+}
+function tick(x, y, c) { R(x, y + 2, 1, 1, c); R(x + 1, y + 3, 1, 1, c); R(x + 2, y + 2, 1, 1, c); R(x + 3, y + 1, 1, 1, c); R(x + 4, y, 1, 1, c); }
+
+function drawTimeline() {
+  R(106, 3, 270, 32, '#07090b'); R(107, 4, 268, 30, '#0e1318');
+  STAGES.forEach(([k, , short], i) => {
+    const x0 = 110 + i * 29, y0 = 6, s = stageOf(k), st = s.status;
+    const run = st === 'running';
+    R(x0, y0, 28, 26, run ? '#2a2112' : st === 'failed' ? '#2a1214' : '#141a20');
+    if (run && Math.floor(clock / 500) % 2) { R(x0, y0, 28, 1, '#f2a541'); R(x0, y0 + 25, 28, 1, '#f2a541'); }
+    const dim = st === 'pending' || st === 'skipped';
+    pxText(g, short, x0 + ((28 - textW(short)) >> 1), y0 + 3, dim ? '#55606c' : '#ece8e0');
+    R(x0 + 2, y0 + 11, 24, 3, '#222a32');
+    const fr = fraction(s.note);
+    if (st === 'done') R(x0 + 2, y0 + 11, 24, 3, '#2bb3a3');
+    else if (st === 'failed') R(x0 + 2, y0 + 11, 24, 3, '#e5484d');
+    else if (run) {
+      if (fr) R(x0 + 2, y0 + 11, Math.max(2, Math.round(24 * Math.min(1, (fr[0] - 0.5) / fr[1]))), 3, '#f2a541');
+      const p = Math.floor(clock / 90) % 24;
+      R(x0 + 2 + p, y0 + 11, 3, 3, '#ffd59a');
+    }
+    let note = '', nc = '#9aa4ae';
+    if (run) { note = fr ? `${fr[0]}/${fr[1]}` : mmss(s.since); nc = '#f2c27a'; }
+    else if (st === 'failed') { note = 'FAIL'; nc = '#ff8a8e'; }
+    else if (st === 'skipped') { note = 'SKIP'; nc = '#55606c'; }
+    if (st === 'done') tick(x0 + 12, y0 + 17, '#2bb3a3');
+    else if (note) pxText(g, note, x0 + ((28 - textW(note)) >> 1), y0 + 18, nc);
+    if (i < STAGES.length - 1) R(x0 + 28, y0 + 12, 1, 1, '#3a4350');
+  });
+}
+
+function drawMonitorWall() {
+  const active = STATE && !STATE.lead?.done_at && !STATE.lead?.failed_at && STATE.stage;
+  const mons = [[12, 6], [38, 6], [12, 20], [38, 20]];
+  mons.forEach(([x, y], i) => {
+    R(x - 1, y - 1, 26, 14, '#07090b'); R(x, y, 24, 12, active ? '#0f1c22' : '#0b1014');
+    if (!active) { if (i === 0) R(x + 10, y + 5, 4, 2, '#1f3b40'); return; }
+    if (i === 0) for (let k = 0; k < 22; k++) { const h = 1 + Math.round(4 * Math.abs(Math.sin(k * 0.7 + clock / 180))); R(x + 1 + k, y + 6 - (h >> 1), 1, h, '#2bb3a3'); }
+    if (i === 1) { for (let k = 0; k < 3; k++) R(x + 2, y + 2 + k * 3, 20, 2, '#1d2a33'); R(x + 2, y + 2, 8, 2, '#f2a541'); R(x + 11, y + 5, 6, 2, '#9b8ad6'); R(x + 5, y + 8, 12, 2, '#2bb3a3'); R(x + 2 + (Math.floor(clock / 120) % 20), y + 1, 1, 10, '#e5484d'); }
+    if (i === 2) { R(x + 1, y + 1, 22, 10, '#d9dee3'); R(x + 1, y + 1, 22, 2, '#2f5d8c'); R(x + 3, y + 5, 7, 4, '#9aa4ae'); R(x + 12, y + 5, 9, 1, '#55606c'); R(x + 12, y + 7, 6, 1, '#55606c'); R(x + 4 + (Math.floor(clock / 400) % 14), y + 4, 1, 1, '#141414'); }
+    if (i === 3) STAGES.forEach(([k], j) => { const st = stageOf(k).status; R(x + 2 + j * 2 + (j > 4 ? 1 : 0), y + 3, 1, 6, st === 'done' ? '#2bb3a3' : st === 'running' ? '#f2a541' : st === 'failed' ? '#e5484d' : '#2a333c'); });
+  });
+}
+
+function drawSigns() {
+  const hot = renderHot(), fail = failed();
+  R(380, 5, 27, 11, hot ? '#3a2408' : '#121519');
+  if (hot) { g.fillStyle = 'rgba(242,165,65,.18)'; g.fillRect(372, 0, 40, 40); }
+  pxText(g, 'RENDER', 382, 8, hot ? (Math.floor(clock / 600) % 2 ? '#ffc56b' : '#f2a541') : '#3a3f47');
+  const on = fail && Math.floor(clock / 450) % 2;
+  R(381, 20, 25, 10, on ? '#4a0d10' : '#121519');
+  if (on) { g.fillStyle = 'rgba(229,72,77,.25)'; g.fillRect(370, 12, 44, 30); }
+  pxText(g, 'ALERT', 384, 23, fail ? (on ? '#ff6b70' : '#8a2a2e') : '#3a3f47');
+}
+
+function plant(c, r, tall) {
+  const x = c * T, y = r * T;
+  R(x + 1, y + 2, 6, 6, '#8c8f94'); R(x + 1, y + 2, 6, 1, '#a9acb1'); R(x + 2, y + 7, 4, 1, '#6d7075');
+  if (tall) { R(x + 2, y - 9, 1, 11, '#2f7d57'); R(x + 4, y - 12, 1, 14, '#3a9a6a'); R(x + 5, y - 7, 1, 9, '#2f7d57'); R(x + 3, y - 6, 1, 8, '#5cbf8a'); }
+  else { R(x, y - 4, 8, 6, '#2f7d57'); R(x + 1, y - 6, 3, 3, '#3a9a6a'); R(x + 5, y - 5, 3, 3, '#3a9a6a'); R(x + 3, y - 3, 2, 2, '#5cbf8a'); }
+}
+
+const FURN = [];
+const F = (key, draw) => FURN.push({ key, draw });
+F(-10, drawSkylight);
+[[1, 5, 1], [14, 5, 1], [44, 5, 0], [1, 14, 0], [11, 28, 1], [50, 26, 0]].forEach(([c, r, t]) => F(ty(r), () => plant(c, r, t)));
+F(47, () => {                                                      // awards shelf
+  R(80, 30, 24, 16, '#3a2618'); R(81, 31, 22, 1, '#5b3a26'); R(80, 45, 24, 2, '#2a1b10');
+  for (let i = 0; i < 3; i++) { R(84 + i * 7, 36, 3, 6, '#d8b25a'); R(85 + i * 7, 34, 1, 2, '#f2d48a'); R(83 + i * 7, 42, 5, 2, '#2b2b31'); }
+});
+F(ty(SEATS.lead.r) - 0.5, () => {                                  // Rio's leather chair
+  const cx = tx(SEATS.lead.c), fy = ty(SEATS.lead.r);
+  R(cx - 7, fy - 17, 14, 13, '#3d2a1c'); R(cx - 6, fy - 16, 12, 1, '#5b3f2a'); R(cx - 6, fy - 4, 12, 3, '#2b1d13');
+});
+F(72, () => {                                                      // Rio's desk, dual monitors
+  const x = 24, y = 56, busy = rio.mode === 'desk';
+  R(x, y, 56, 8, '#6e4228'); R(x, y, 56, 1, '#8a5634'); R(x, y + 8, 56, 8, '#4a2b18'); R(x, y + 15, 56, 1, '#2e1b0f');
+  for (const mx of [x + 14, x + 28]) {
+    R(mx, y - 8, 13, 9, '#15181c'); R(mx + 1, y - 7, 11, 7, busy ? '#13323a' : '#0b1014');
+    if (busy) { R(mx + 2, y - 5, 7, 1, '#2bb3a3'); R(mx + 2, y - 3, 5, 1, '#f2a541'); }
+    R(mx + 6, y + 1, 1, 2, '#15181c');
+  }
+  R(x + 18, y + 3, 14, 2, '#d9d6cf'); R(x + 46, y + 2, 3, 3, '#efe9df'); R(x + 49, y + 3, 1, 1, '#efe9df');
+  R(x + 4, y + 2, 6, 4, '#1a1a1d'); R(x + 4, y + 2, 6, 1, '#f2f2f2');            // mini clapper on the desk
+});
+F(112, () => {                                                     // glass office walls
+  g.fillStyle = 'rgba(150,210,220,.20)'; g.fillRect(104, 40, 8, 72); g.fillRect(8, 104, 64, 8); g.fillRect(88, 104, 24, 8);
+  R(104, 40, 1, 72, '#7fa3ad'); R(111, 40, 1, 72, '#7fa3ad');
+  R(8, 104, 64, 1, '#7fa3ad'); R(88, 104, 24, 1, '#7fa3ad'); R(8, 111, 64, 1, '#7fa3ad'); R(88, 111, 24, 1, '#7fa3ad');
+  R(71, 104, 1, 8, '#7fa3ad'); R(88, 104, 1, 8, '#7fa3ad');
+  g.fillStyle = 'rgba(255,255,255,.28)'; for (let i = 0; i < 3; i++) g.fillRect(16 + i * 18, 106, 5, 1); g.fillRect(106, 52, 1, 6); g.fillRect(106, 80, 1, 6);
+  R(30, 107, 30, 3, 'rgba(10,14,18,.5)'); pxText(g, 'RIO', 39, 106, '#e9e6df');
+});
+F(72, () => {                                                      // render rack
+  const x = 368, y = 30, hot = renderHot();
+  R(x, y, 40, 42, '#101317'); R(x + 1, y + 1, 38, 40, '#191d23'); R(x, y + 41, 40, 1, '#07090b');
+  for (let u = 0; u < 6; u++) {
+    const uy = y + 3 + u * 6;
+    R(x + 3, uy, 34, 5, '#22272f'); R(x + 3, uy, 34, 1, '#2c323b');
+    for (let l = 0; l < 6; l++) {
+      const bucket = Math.floor(clock / (hot ? 90 : 900));
+      const on = hash(u * 7 + l, bucket) > (hot ? 0.35 : 0.6);
+      R(x + 22 + l * 2, uy + 2, 1, 1, on ? (hot && l % 2 ? '#f2a541' : '#3be08a') : '#1a3a26');
+    }
+    R(x + 5, uy + 2, 12, 1, '#14181d');
+  }
+  if (hot) { g.fillStyle = 'rgba(242,165,65,.10)'; g.fillRect(x - 4, y + 42, 48, 8); }
+});
+F(176, () => {                                                     // espresso bar
+  R(392, 128, 16, 48, '#5b3a26'); R(392, 128, 2, 48, '#8a5634'); R(392, 175, 16, 1, '#2e1b0f');
+  R(395, 132, 10, 11, '#b9bdc4'); R(396, 133, 8, 3, '#2b2e35'); R(398, 137, 1, 2, '#e5484d'); R(401, 137, 1, 2, '#2bb3a3');
+  R(396, 146, 6, 8, '#2b2e35'); R(397, 144, 4, 2, '#6b4a2f');                           // grinder
+  for (let i = 0; i < 3; i++) R(397, 158 + i * 5, 4, 3, '#efe9df');
+  if (ACTS.find(a => a.id === 'espresso').spots.some(s => s.by && actors[s.by].mode === 'activity') && Math.floor(clock / 300) % 2) R(399, 129, 1, 3, 'rgba(255,255,255,.6)');
+});
+// sound booth
+F(168, () => {
+  R(8, 160, 80, 8, '#3a3f48'); R(8, 160, 80, 1, '#4b515b'); R(80, 160, 8, 8, '#3a3f48');
+  for (let x = 10; x < 78; x += 6) { R(x, 168, 5, 6, '#2c3037'); R(x + 1, 169, 3, 2, '#3a3f48'); R(x + 2, 171, 1, 2, '#1f2227'); }  // foam
+});
+F(232, () => {
+  R(80, 168, 8, 32, '#3a3f48'); R(80, 208, 8, 24, '#3a3f48'); R(80, 168, 1, 64, '#4b515b');
+  g.fillStyle = 'rgba(150,210,220,.25)'; g.fillRect(82, 172, 4, 20);
+  const live = ACTS.find(a => a.id === 'booth').spots[0].by;
+  R(82, 162, 4, 3, live ? '#e5484d' : '#4a1f22');                                     // booth "live" lamp
+});
+F(ty(25), () => {                                                  // mic stand
+  const x = tx(5);
+  R(x - 3, 206, 7, 1, '#14171c'); R(x, 190, 1, 16, '#5d6168'); R(x - 1, 186, 3, 4, '#2b2e35'); R(x - 1, 186, 3, 1, '#7a7e86');
+  R(x + 2, 186, 1, 4, 'rgba(200,200,210,.35)');
+});
+// round table + laptops
+const TBL = { x: tx(M.TABLE.c), y: M.TABLE.r * T + 4, r: 27 };
+function drawTable() {
+  const { x, y, r } = TBL;
+  g.fillStyle = 'rgba(0,0,0,.28)'; g.beginPath(); g.arc(x + 2, y + 5, r, 0, Math.PI * 2); g.fill();
+  for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r - dy * dy)); R(x - hw, y + dy + 3, hw * 2, 1, '#3e2414'); }  // apron
+  for (let dy = -r; dy <= r; dy++) {
+    const hw = Math.round(Math.sqrt(r * r - dy * dy));
+    R(x - hw, y + dy, hw * 2, 1, '#6e4228');
+    if (dy % 5 === 0) R(x - hw + 3, y + dy, Math.max(0, hw * 2 - 6), 1, '#7a4a2d');
+  }
+  g.strokeStyle = '#8a5634'; g.lineWidth = 1; g.beginPath(); g.arc(x, y, r - 2, Math.PI * 1.05, Math.PI * 1.7); g.stroke();
+  R(x - 5, y - 3, 10, 6, '#2b2e35'); R(x - 4, y - 2, 8, 4, STATE?.stage ? '#13323a' : '#0b1014');   // centre puck display
+  if (STATE?.stage) R(x - 3 + (Math.floor(clock / 160) % 6), y - 1, 1, 2, '#f2a541');
+  for (const id of IDS) {
+    const st = SEATS[CAST[id].seat], sx = tx(st.c), sy = ty(st.r) - 6;
+    const dx = x - sx, dy = y - sy, d = Math.hypot(dx, dy), lx = Math.round(x - dx / d * (r - 7)), ly = Math.round(y - dy / d * (r - 7));
+    const busy = actors[id].mode === 'seat';
+    if (st.face === 'front') { R(lx - 4, ly - 1, 8, 3, '#9aa0a8'); R(lx - 4, ly - 4, 8, 5, '#c3c8ce'); R(lx - 1, ly - 2, 2, 1, busy ? CAST[id].accent : '#9aa0a8'); }
+    else {
+      R(lx - 4, ly - 6, 8, 6, '#2b2e35'); R(lx - 3, ly - 5, 6, 4, busy ? '#13323a' : '#0b1014');
+      if (busy) { R(lx - 2, ly - 4, 1 + (Math.floor(clock / 200 + st.c) % 4), 1, '#2bb3a3'); R(lx - 2, ly - 2, 3, 1, CAST[id].accent); }
+      R(lx - 4, ly, 8, 2, '#9aa0a8');
+    }
+  }
+}
+F(TBL.y + TBL.r - 2, drawTable);
+for (const id of IDS) {
+  const st = SEATS[CAST[id].seat], cx = tx(st.c), fy = ty(st.r);
+  if (st.face === 'front') F(fy - 0.5, () => { R(cx - 6, fy - 13, 12, 9, '#2f3640'); R(cx - 6, fy - 13, 12, 1, '#46505c'); R(cx - 5, fy - 4, 10, 3, '#252b33'); R(cx - 1, fy - 1, 2, 2, '#14171c'); });
+  else F(fy + 0.5, () => { R(cx - 6, fy - 6, 12, 4, '#2f3640'); R(cx - 6, fy - 6, 12, 1, '#46505c'); R(cx - 5, fy - 2, 1, 3, '#14171c'); R(cx + 4, fy - 2, 1, 3, '#14171c'); });
+}
+// screening corner
+const watching = () => ACTS.find(a => a.id === 'dailies').spots.filter(s => s.by && actors[s.by].mode === 'activity').length;
+F(184, () => {
+  R(270, 176, 2, 8, '#14171c'); R(344, 176, 2, 8, '#14171c'); R(266, 183, 84, 1, '#14171c');
+  R(266, 148, 84, 30, '#0d0f12'); R(268, 150, 80, 26, '#14191f');
+  if (watching()) {
+    const f = clock / 1000;
+    R(268, 150, 80, 15, '#5a7fa8'); R(268, 165, 80, 11, '#3f6b4a');
+    R(268 + Math.round((f * 6) % 80), 154, 4, 4, '#ffd59a');
+    for (let i = 0; i < 5; i++) R(270 + i * 17, 162 - (i % 2) * 2, 10, 4, '#355d40');
+    R(270, 173, 76, 1, '#1d2a33'); R(270, 173, Math.round((f * 3) % 76), 1, '#f2a541');
+  } else { R(300, 160, 16, 6, '#1d2a33'); R(305, 162, 6, 2, '#2bb3a3'); }
+});
+F(211, () => {                                                     // couch (backrest hides the viewers' lower half)
+  R(270, 201, 76, 11, '#3b4a63'); R(270, 201, 76, 1, '#566887'); R(272, 211, 72, 10, '#33415a');
+  R(268, 203, 4, 18, '#2c3850'); R(344, 203, 4, 18, '#2c3850'); R(270, 221, 76, 2, '#1d2638');
+  R(295, 204, 1, 7, '#2c3850'); R(320, 204, 1, 7, '#2c3850');
+});
+F(232, () => {                                                     // projector + beam
+  R(303, 224, 11, 6, '#2b2e35'); R(304, 225, 3, 3, '#0b0d10'); R(309, 225, 4, 1, '#55606c');
+  if (watching()) { g.fillStyle = 'rgba(255,240,200,.06)'; g.beginPath(); g.moveTo(305, 225); g.lineTo(268, 177); g.lineTo(348, 177); g.closePath(); g.fill(); }
+});
+
+// ---------------------------------------------------------------- effects + render
+function bubble(x, y, kind) {
+  R(x, y, 11, 7, '#ffffff'); R(x + 2, y + 7, 2, 1, '#ffffff'); R(x + 2, y + 8, 1, 1, '#ffffff');
+  if (kind === 'dots') { const n = Math.floor(clock / 300) % 4; for (let i = 0; i < n; i++) R(x + 2 + i * 3, y + 3, 1, 1, '#333'); }
+  if (kind === 'zz') { R(x + 3, y + 1, 5, 1, '#5b6b7a'); R(x + 6, y + 2, 1, 1, '#5b6b7a'); R(x + 5, y + 3, 1, 1, '#5b6b7a'); R(x + 4, y + 4, 1, 1, '#5b6b7a'); R(x + 3, y + 5, 5, 1, '#5b6b7a'); }
+  if (kind === 'check') tick(x + 3, y + 1, '#1f8a7a');
+  if (kind === 'bang') { R(x + 5, y + 1, 1, 3, '#e5484d'); R(x + 5, y + 5, 1, 1, '#e5484d'); }
+}
+let hovered = null;
+function drawActor(a) {
+  const t = clock + a.phase;
+  let x = a.x, y = a.y, pose = a.walking ? 'walk' : a.pose;
+  if (pose === 'walk' && a.mode === 'free') pose = 'stand';
+  let back;
+  if (a.walking) back = a.facing === 'back';
+  else if (a.mode === 'seat' || a.mode === 'wait') back = SEATS[a.ch.seat].face === 'back';
+  else back = !!(a.spot && a.spot.back && a.mode === 'activity');
+  if (pose === 'type' || pose === 'sitback' || pose === 'recline') y += 3;
+  drawChar(g, a.ch, x, y, pose, t, back);
+  a.hit = [x - 7, y - 24, 14, 24]; a.drawX = x; a.drawY = y;
+}
+function drawEffects(a) {
+  if (a.walking) return;
+  const t = clock + a.phase;
+  if (a.mode === 'seat' && (t % 7000) < 2600) bubble(Math.round(a.drawX) + 3, Math.round(a.drawY) - 32, 'dots');
+  if (a.mode === 'wait' && (t % 6000) < 3600) bubble(Math.round(a.drawX) + 3, Math.round(a.drawY) - 32, 'zz');
+  if (a === rio && a.mode === 'visit') bubble(Math.round(a.drawX) + 3, Math.round(a.drawY) - 33, (clock % 2400) < 1200 ? 'dots' : 'check');
+  if (a === rio && a.mode === 'halt') bubble(Math.round(a.drawX) + 3, Math.round(a.drawY) - 33, 'bang');
+}
+let banner = null;   // { kind: 'wrap'|'fail', at: clock }
+function drawBanner() {
+  if (!banner) return;
+  const age = clock - banner.at;
+  if (age > 7000) { banner = null; return; }
+  const cx = W / 2, cy = 112;
+  if (banner.kind === 'wrap') {
+    // clapperboard: the stick snaps shut at 350 ms
+    const shut = age > 350, bx = cx - 26, by = cy - 30;
+    R(bx, by + 8, 52, 30, '#15171b'); R(bx + 1, by + 9, 50, 28, '#1f2227');
+    pxText(g, 'TAKE 1', bx + 4, by + 14, '#e9e6df'); pxText(g, 'SCENE 1', bx + 4, by + 22, '#9aa4ae');
+    R(bx, by + 4, 52, 4, '#15171b'); for (let i = 0; i < 6; i++) R(bx + 2 + i * 9, by + 4, 4, 4, '#f2f2f2');
+    g.save(); g.translate(bx, by + 4); g.rotate(shut ? 0 : -0.45);
+    g.fillStyle = '#15171b'; g.fillRect(0, -5, 52, 5); g.fillStyle = '#f2f2f2'; for (let i = 0; i < 6; i++) g.fillRect(4 + i * 9, -5, 4, 5);
+    g.restore();
+    if (age > 350 && age < 650) { g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(0, 0, W, H); }
+    const msg = "THAT'S A WRAP", tw = textW(msg, 2);
+    R(cx - tw / 2 - 6, cy + 12, tw + 12, 16, 'rgba(10,14,18,.88)'); R(cx - tw / 2 - 6, cy + 27, tw + 12, 1, '#2bb3a3');
+    pxText(g, msg, cx - tw / 2, cy + 15, '#f2a541', 2);
+  } else {
+    g.fillStyle = `rgba(229,72,77,${0.06 + 0.05 * Math.sin(clock / 200)})`; g.fillRect(0, 40, W, H - 40);
+    const msg = 'RUN STOPPED', tw = textW(msg, 2);
+    R(cx - tw / 2 - 6, cy - 8, tw + 12, 16, 'rgba(20,8,10,.9)'); R(cx - tw / 2 - 6, cy + 7, tw + 12, 1, '#e5484d');
+    pxText(g, msg, cx - tw / 2, cy - 5, '#ff8a8e', 2);
+  }
+}
+function render() {
+  g.setTransform(S, 0, 0, S, 0, 0);
+  g.imageSmoothingEnabled = false;
+  if (!bg) buildBackground();
+  g.drawImage(bg, 0, 0);
+  drawTimeline(); drawMonitorWall(); drawSigns();
+  const list = FURN.slice();
+  const all = [rio, ...IDS.map(id => actors[id]).filter(a => !a.out)];
+  for (const a of all) list.push({ key: a.y, draw: () => drawActor(a) });
+  list.sort((p, q) => p.key - q.key);
+  for (const d of list) d.draw();
+  if (failed()) { g.fillStyle = `rgba(229,72,77,${0.03 + 0.03 * Math.sin(clock / 300)})`; g.fillRect(0, 40, W, H - 40); }
+  for (const a of all) drawEffects(a);
+  if (hovered && hovered.hit) {
+    const [hx, hy, hw] = hovered.hit, mx = Math.round(hx + hw / 2) - 2, my = hy - 6 + (Math.floor(clock / 300) % 2);
+    R(mx, my, 5, 1, '#f2a541'); R(mx + 1, my + 1, 3, 1, '#f2a541'); R(mx + 2, my + 2, 1, 1, '#f2a541');
+  }
+  drawBanner();
+}
+let lastFrame = performance.now();
+function frame(now) {
+  const dt = Math.min(0.1, (now - lastFrame) / 1000); lastFrame = now; clock += dt * 1000;
+  for (const id of IDS) { const a = actors[id]; syncClock(a); if (a.out) continue; think(a); a.update(dt); }
+  thinkRio(); rio.update(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ---------------------------------------------------------------- panel
+let firstState = true;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function ago(iso) {
+  if (!iso) return '';
+  const s = Math.max(0, (Date.now() - Date.parse(iso)) / 1000);
+  if (s < 60) return `${Math.round(s)}s`;
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m`;
+}
+function dur(s) {
+  if (s == null || isNaN(s)) return '-';
+  s = Math.round(s);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, '0')}s`;
+  return `${Math.floor(s / 3600)}h ${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}m`;
+}
+const tok = n => n == null ? '-' : n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(Math.round(n));
+const mb = n => n == null ? '-' : n >= 1024 ? `${(n / 1024).toFixed(1)} GB` : `${Math.round(n)} MB`;
+const range = (t, f) => t ? (t[0] === t[2] ? f(t[1]) : `${f(t[0])} – ${f(t[2])}`) : '-';
+function vsMid(actual, t) {
+  if (actual == null || !t) return '';
+  const p = Math.round((actual - t[1]) / t[1] * 100);
+  const cls = actual > t[2] ? 'bad' : actual < t[0] ? 'warn' : 'good';
+  return ` <span class="${cls}">${p >= 0 ? '+' : ''}${p}% vs mid${actual > t[2] ? ', over the high end' : actual < t[0] ? ', under the low end' : ''}</span>`;
+}
+function elapsedS() {
+  if (!STATE?.started_at) return null;
+  const end = STATE.ended_at ? Date.parse(STATE.ended_at) : Date.now();
+  return Math.max(0, (end - Date.parse(STATE.started_at)) / 1000);
+}
+function stageLabel(k) {
+  const st = STAGES.find(s => s[0] === k); if (!st) return '-';
+  const note = stageOf(k).note;
+  return st[1] + (note ? ` · ${note}` : '');
+}
+function avatar(canvas, ch, bgc) {
+  const c = canvas.getContext('2d'); c.imageSmoothingEnabled = false; c.setTransform(4, 0, 0, 4, 0, 0);
+  c.fillStyle = bgc; c.fillRect(0, 0, 12, 16); drawChar(c, ch, 6, 25, 'stand', 2000, false);
+}
+function describe(id) {
+  if (id === 'lead') {
+    if (failed()) return { cls: 'fail', text: 'Run stopped', line: STATE.lead.doing };
+    if (wrapped()) return { cls: 'wrap', text: "That's a wrap", line: STATE.lead.doing };
+    return { cls: 'lead', text: rio.mode === 'visit' ? `Checking on ${rio.visiting?.ch.name || 'the table'}` : 'Directing', line: STATE?.lead?.doing || 'Waiting for a run' };
+  }
+  const a = actors[id], info = a.info || {};
+  if (a.out) return { cls: 'out', text: 'Clocked out', act: 'clocked out', line: info.last ? `Last: ${info.last}` : 'Left for the day', dim: true };
+  if (a.want === 'busy') return { cls: 'busy', text: `Working · ${ago(info.since)}`, line: info.task || 'Working', sub: a.mode === 'seat' ? '' : 'Walking to the table' };
+  if (a.waiting) return { cls: 'wait', text: 'Waiting for next call', line: info.last ? `Last: ${info.last}` : 'Waiting for next call' };
+  const act = a.mode === 'activity' && a.act ? a.act.label : a.act ? `heading off: ${a.act.label}` : 'on a break';
+  return { cls: 'idle', text: 'Break', line: info.last ? `Last: ${info.last}` : act, act, dim: true };
+}
+function buildPanel() {
+  const L = CAST.lead;
+  $('leadName').textContent = L.name; $('leadRole').textContent = L.role;
+  avatar($('leadAv'), L, '#1f262e');
+  for (const id of IDS) {
+    const ch = CAST[id], li = document.createElement('li'); li.dataset.id = id;
+    const av = document.createElement('canvas'); av.width = 48; av.height = 64; avatar(av, ch, '#1f262e');
+    li.appendChild(av);
+    const body = document.createElement('div');
+    body.innerHTML = `<div class="who"><b>${esc(ch.name)}</b><small>${esc(ch.role)}</small></div>
+      <div class="row2"><span class="pill"></span></div><div class="task"></div><div class="step">${esc(ch.step)}</div>`;
+    li.appendChild(body);
+    li.addEventListener('mouseenter', () => { hovered = actors[id]; });
+    li.addEventListener('mouseleave', () => { hovered = null; });
+    $('crew').appendChild(li);
+  }
+  const strip = $('strip');
+  for (const [k, label] of STAGES) { const li = document.createElement('li'); li.dataset.k = k; li.textContent = label; strip.appendChild(li); }
+}
+function updateForecast() {
+  const e = STATE?.estimate, act = STATE?.actual || {}, el = elapsedS();
+  const ended = !!STATE?.ended_at, state = failed() ? 'failed' : ended ? 'done' : 'running';
+  $('fcState').textContent = !STATE ? '' : ended ? (failed() ? 'stopped' : 'final') : 'live';
+  let h = '';
+  if (!STATE) h = '<div class="none">No run yet.</div>';
+  else if (!e) h = `<div class="row"><span class="k">Elapsed</span><span class="v"><b>${dur(el)}</b></span></div><div class="none">No forecast for this run. Pass <code>--estimate E/estimate.json</code> to <code>studio.py reset</code>.</div>`;
+  else {
+    const w = e.wall_s;
+    if (w) {
+      const shown = ended && act.wall_s != null ? act.wall_s : (el || 0);
+      const max = Math.max(w[2] * 1.15, shown * 1.05), pct = v => `${Math.min(100, v / max * 100).toFixed(2)}%`;
+      h += `<div class="row"><span class="k">Wall time</span><span class="v">predicted <b>${range(w, dur)}</b></span>
+        <span class="sub">mid ${dur(w[1])}</span></div>
+        <div class="bar ${state}"><div class="band" style="left:${pct(w[0])};width:calc(${pct(w[2])} - ${pct(w[0])})"></div><div class="fill" style="width:${pct(shown)}"></div><div class="mid" style="left:${pct(w[1])}"></div></div>
+        <div class="row"><span class="k">${ended ? 'Actual' : 'Elapsed'}</span><span class="v"><b>${dur(ended && act.wall_s != null ? act.wall_s : el)}</b>${ended ? vsMid(act.wall_s ?? el, w) : (el > w[2] ? ' <span class="bad">past the high end</span>' : '')}</span></div>`;
+    }
+    h += `<div class="row"><span class="k">Tokens</span><span class="v">predicted <b>${range(e.tokens, tok)}</b></span>${act.tokens != null ? `<span class="sub">actual <b style="color:var(--text)">${tok(act.tokens)}</b>${vsMid(act.tokens, e.tokens)}</span>` : ''}</div>`;
+    h += `<div class="row"><span class="k">Peak RAM</span><span class="v">predicted <b>${range(e.peak_ram_mb, mb)}</b></span>${act.peak_ram_mb != null ? `<span class="sub">actual <b style="color:var(--text)">${mb(act.peak_ram_mb)}</b>${vsMid(act.peak_ram_mb, e.peak_ram_mb)}</span>` : ''}</div>`;
+    const extra = [];
+    if (e.source_s) extra.push(`source ${dur(e.source_s)}`);
+    if (e.scribe_usd != null) extra.push(`Scribe $${Number(e.scribe_usd).toFixed(2)}`);
+    if (extra.length) h += `<div class="row"><span class="k">Input</span><span class="v">${esc(extra.join(' · '))}</span></div>`;
+    if (e.gate_ok === false) h += `<div class="gate">Forecast gate flagged this run: ${esc((e.gate_reasons || []).join('; ') || 'see estimate.json')}</div>`;
+  }
+  $('fc').innerHTML = h;
+}
+function updatePanel() {
+  let busy = 0, away = 0, wait = 0;
+  for (const li of $('crew').children) {
+    const id = li.dataset.id, d = describe(id);
+    if (d.cls === 'busy') busy++; if (d.cls === 'out') away++; if (d.cls === 'wait') wait++;
+    const pill = li.querySelector('.pill'); pill.className = `pill ${d.cls}`; pill.textContent = d.cls === 'idle' ? `Break · ${d.act}` : d.text;
+    li.style.opacity = d.cls === 'out' ? '.5' : '';
+    const task = li.querySelector('.task'); task.textContent = d.line; task.className = 'task' + (d.dim ? ' dim' : ''); task.hidden = !d.line || (d.cls === 'idle' && d.line === d.act);
+    li.classList.toggle('hl', !!hovered && hovered.id === id);
+  }
+  $('counts').textContent = `${busy} working · ${IDS.length - busy - away - wait} on a break` + (wait ? ` · ${wait} waiting` : '') + (away ? ` · ${away} clocked out` : '');
+  const L = describe('lead');
+  $('leadPill').innerHTML = `<span class="pill ${L.cls}">${esc(L.text)}</span>`;
+  $('leadDoing').textContent = L.line;
+  $('video').textContent = STATE?.video || 'no run yet';
+  $('nowStage').textContent = failed() ? 'Stopped' : STATE?.lead?.done_at ? 'Wrapped' : STATE?.stage ? stageLabel(STATE.stage) : (STATE ? 'Standing by' : '-');
+  $('rec').className = 'rec' + (failed() ? ' fail' : (STATE && !STATE.ended_at && STATE.stage) ? '' : ' off');
+  for (const li of $('strip').children) {
+    const s = stageOf(li.dataset.k); li.className = s.status;
+    const label = STAGES.find(x => x[0] === li.dataset.k)[1];
+    li.innerHTML = esc(label) + (s.note ? ` <small>${esc(s.note)}</small>` : '');
+    li.title = `${label}: ${s.status}`;
+  }
+  const live = $('live');
+  if (!STATE) { live.className = 'live off'; $('liveText').textContent = 'No run yet'; }
+  else {
+    const stale = !STATE.ended_at && Date.now() - Date.parse(STATE.updated) > 15 * 60 * 1000;
+    live.className = 'live' + (stale ? ' stale' : '');
+    $('liveText').textContent = `Live · updated ${ago(STATE.updated)} ago`;
+  }
+  $('empty').style.display = STATE ? 'none' : 'block';
+  updateForecast();
+}
+function renderFeed() {
+  const ol = $('feed'); ol.innerHTML = '';
+  const log = (STATE?.log || []).slice(-30).reverse();
+  if (!log.length) { ol.innerHTML = '<li><span class="none">Nothing yet. The feed fills as the pipeline runs.</span></li>'; return; }
+  for (const e of log) {
+    const ch = CAST[e.who] || CAST.lead, d = new Date(e.t);
+    const li = document.createElement('li');
+    li.innerHTML = `<time>${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time><span><b style="color:${ch.accent}">${esc(ch.name)}</b> ${esc(e.msg)}</span>`;
+    ol.appendChild(li);
+  }
+}
+// ---------------------------------------------------------------- session panel
+const EXTRA = ['#4fb3d9', '#c38be0', '#9ccc65', '#f06292', '#bcaaa4', '#e8833a'];
+const fmtTok = n => { n = +n || 0; return n >= 1e9 ? (n / 1e9).toFixed(2) + 'B' : n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : n >= 1e4 ? Math.round(n / 1e3) + 'k' : n.toLocaleString(); };
+const hhmm = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+function fmtDur(ms) { const m = Math.max(0, Math.round(ms / 60000)); return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m` : `${m}m`; }
+const meterCls = p => p >= 80 ? ' hot' : p >= 60 ? ' warm' : '';
+function windowLine(u) {
+  const w = u?.window; if (!w?.start) return '';
+  const now = Date.now(), start = Date.parse(w.start), reset = Date.parse(w.resets_at);
+  if (isNaN(start) || isNaN(reset)) return '';
+  if (reset <= now) return `<p class="dim">The ${hhmm(w.start)} window has reset. The next check-in starts a new one.</p>`;
+  return `<p>Window: <b>${fmtDur(now - start)}</b> in · resets in <b>${fmtDur(reset - now)}</b>${w.source === 'estimate' ? ' <span class="dim">(estimated from the run start)</span>' : ''}</p>`;
+}
+let sessKey = '';
+function renderSession() {
+  const s = STATE, u = s?.usage;
+  const key = JSON.stringify([s?.description, s?.video, s?.lead?.doing, u, s?.budget]);
+  if (key === sessKey) { const el = $('sxWin'); if (el && u && !u.error) el.innerHTML = windowLine(u); return; }
+  sessKey = key;
+  $('sxAbout').innerHTML = `<h3>Working on</h3>` + (!s
+    ? `<p class="dim">No run on the board yet.</p>`
+    : (s.description ? `<p class="desc">${esc(s.description)}</p>` : `<p class="dim">No description yet. Set one with <code>studio.py describe "…"</code>.</p>`)
+      + (s.video ? `<p class="dim">Video: ${esc(s.video)}</p>` : '')
+      + `<p><b style="color:${CAST.lead.accent}">${esc(CAST.lead.name)}</b> ${esc(s.lead?.doing || '')}</p>`);
+  $('sessAge').textContent = u?.computed_at ? `measured ${hhmm(u.computed_at)}` : '';
+  const limitHead = l => { const p = +l.pct, stale = Date.now() - Date.parse(l.as_of) > 20 * 60000;
+    return `<div class="big">${p.toFixed(0)}%<small>of the 5-hour limit</small></div>
+      <div class="meter${meterCls(p)}" role="img" aria-label="${p.toFixed(0)} percent of the 5-hour limit used"><i style="width:${Math.min(100, p)}%"></i></div>
+      <p class="note">Read from the ${esc(l.source)} at ${hhmm(l.as_of)}${stale ? ' (may be stale)' : ''}${l.seven_day_pct != null ? ` · 7-day ${(+l.seven_day_pct).toFixed(0)}%` : ''}. Covers all your sessions, not just this run.</p>`; };
+  if (!u || u.error) {
+    const why = !s ? `<p class="dim">Measured once a run starts.</p>`
+      : u?.error ? `<p class="err">Couldn't measure yet: ${esc(u.error)}.</p>`
+      : `<p class="dim">Not measured yet. It updates during a run: every 30 s overnight, on every step in <code>/rio</code>.</p>`;
+    $('sxSpend').innerHTML = `<h3>Session spend</h3>${u?.limit ? limitHead(u.limit) : ''}${why}${u?.cost_usd != null ? `<p>Cost equiv. <b>$${(+u.cost_usd).toFixed(2)}</b></p>` : ''}`;
+    $('sxShare').innerHTML = `<h3>Share per crew member</h3><p class="dim">Shares appear once the run's transcripts can be read.</p>`;
+    return;
+  }
+  const t = u.totals || {};
+  // All three side by side (user, 2026-11-03): the account's 5-hour limit %, this session's % of the
+  // token budget, and this session's tokens inside the current 5-hour window.
+  let head = u.limit ? limitHead(u.limit)
+    : `<p class="note">No 5-hour reading yet. It comes from the status line, the run's stream, or a background check during <code>/rio</code>.</p>`;
+  if (u.budget) {
+    const p = +u.budget.pct;
+    head += `<div class="big">${p.toFixed(0)}%<small>of the token budget</small></div>
+      <div class="meter${meterCls(p)}" role="img" aria-label="${p.toFixed(0)} percent of the token budget used"><i style="width:${Math.min(100, p)}%"></i></div>
+      <p class="note">${fmtTok(u.window?.tokens)} of a ${fmtTok(u.budget.tokens)}-token budget used by this session in this window.</p>`;
+  } else {
+    head += `<p class="note">No token budget set. <code>studio.py budget &lt;tokens&gt;</code> adds a budget meter.</p>`;
+  }
+  head += `<div class="big">${fmtTok(u.window?.tokens)}<small>this session, this 5-hour window</small></div>
+    <p class="note">${fmtTok(t.total)} in the whole session${u.session_started ? ` (since ${hhmm(u.session_started)})` : ''}.</p>`;
+  $('sxSpend').innerHTML = `<h3>Session spend</h3>${head}<span id="sxWin">${windowLine(u)}</span>
+    <div class="tk4"><span>Input</span><b>${fmtTok(t.input)}</b><span>Output</span><b>${fmtTok(t.output)}</b>
+    <span>Cache read</span><b>${fmtTok(t.cache_read)}</b><span>Cache write</span><b>${fmtTok(t.cache_write)}</b>
+    <span>Total</span><b>${fmtTok(t.total)}</b><span>Cost equiv.</span><b>${u.cost_usd != null ? '$' + (+u.cost_usd).toFixed(2) : '<span class="dim">at the end</span>'}</b></div>`;
+  const ag = (u.agents || []).filter(a => a.total > 0);
+  if (!ag.length) { $('sxShare').innerHTML = `<h3>Share per crew member</h3><p class="dim">No tokens recorded yet.</p>`; return; }
+  let x = 0;
+  const cols = ag.map(a => CAST[a.key]?.accent || EXTRA[x++ % EXTRA.length]);
+  $('sxShare').innerHTML = `<h3>Share per crew member</h3>
+    <div class="stack" role="img" aria-label="${esc(ag.map(a => `${a.name} ${a.pct}%`).join(', '))}">${ag.map((a, i) => `<i style="width:${a.pct}%;background:${cols[i]}" title="${esc(a.name)} ${a.pct}%"></i>`).join('')}</div>
+    <ul class="shares">${ag.map((a, i) => `<li><i class="sw" style="background:${cols[i]}"></i><span class="n">${esc(a.name)}${CAST[a.key] ? ` <small>${esc(CAST[a.key].role)}</small>` : ''}${a.runs > 1 ? ` <small>×${a.runs}</small>` : ''}</span><span class="p">${(+a.pct).toFixed(1)}%</span><span class="t">${fmtTok(a.total)}</span></li>`).join('')}</ul>`;
+}
+
+let lastLogKey = '';
+function applyState(s) {
+  if (!s) { updatePanel(); renderSession(); return; }
+  STATE = s;
+  checkEnd(s, firstState);
+  for (const id of IDS) {
+    const info = (s.crew || {})[id] || { status: 'idle' };
+    const a = actors[id]; a.info = info;
+    a.waiting = info.status !== 'busy' && crewWaiting(s, id);
+    if (firstState) teleport(a, info.status);
+    a.want = info.status === 'busy' ? 'busy' : 'idle';
+  }
+  firstState = false;
+  updatePanel(); renderSession();
+  const key = s.log?.length + '|' + (s.log?.[s.log.length - 1]?.t || '') + (s.log?.[s.log.length - 1]?.msg || '');
+  if (key !== lastLogKey) { lastLogKey = key; renderFeed(); }
+}
+
+// ---------------------------------------------------------------- sound: clapper clack + wrap chime, softer fail tone
+let audio = null, soundOn = true, lastDone = null, lastFail = null;
+try { soundOn = localStorage.getItem('studio-sound') !== 'off'; } catch {}
+function audioCtx() {
+  if (!audio) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return null; audio = new C(); }
+  return audio;
+}
+function clack(ctx, t0) {
+  const len = Math.floor(ctx.sampleRate * 0.09), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 6);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.9;
+  const gn = ctx.createGain(); gn.gain.value = 0.9;
+  src.connect(bp).connect(gn).connect(ctx.destination); src.start(t0);
+  const o = ctx.createOscillator(), og = ctx.createGain();           // wooden knock body
+  o.type = 'sine'; o.frequency.setValueAtTime(180, t0); o.frequency.exponentialRampToValueAtTime(70, t0 + 0.08);
+  og.gain.setValueAtTime(0.5, t0); og.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
+  o.connect(og).connect(ctx.destination); o.start(t0); o.stop(t0 + 0.12);
+}
+function note(ctx, f, t0, len, peak, type) {
+  const o = ctx.createOscillator(), gn = ctx.createGain();
+  o.type = type; o.frequency.value = f;
+  gn.gain.setValueAtTime(0.0001, t0); gn.gain.exponentialRampToValueAtTime(peak, t0 + 0.02); gn.gain.exponentialRampToValueAtTime(0.0001, t0 + len);
+  o.connect(gn).connect(ctx.destination); o.start(t0); o.stop(t0 + len + 0.05);
+}
+function wrapSound() {
+  const ctx = audioCtx(); if (!ctx) return;
+  ctx.resume().then(() => {
+    const t = ctx.currentTime + 0.05;
+    clack(ctx, t);
+    [523.25, 659.25, 783.99].forEach((f, i) => note(ctx, f, t + 0.4 + i * 0.13, 0.9, 0.16, 'triangle'));
+    [523.25, 659.25, 783.99, 1046.5].forEach(f => note(ctx, f, t + 0.85, 1.8, 0.09, 'sine'));
+  }).catch(() => {});
+}
+function failSound() {
+  const ctx = audioCtx(); if (!ctx) return;
+  ctx.resume().then(() => {
+    const t = ctx.currentTime + 0.05;
+    note(ctx, 440, t, 0.9, 0.12, 'sine'); note(ctx, 349.23, t + 0.45, 1.4, 0.12, 'sine'); note(ctx, 174.6, t + 0.45, 1.4, 0.05, 'sine');
+  }).catch(() => {});
+}
+function renderSound() {
+  const b = $('sound'), armed = audio && audio.state === 'running';
+  b.textContent = !soundOn ? 'Sound off' : armed ? 'Sound on' : 'Click to arm sound';
+  b.className = 'sound' + (soundOn ? (armed ? ' on' : ' arm') : '');
+}
+$('sound').addEventListener('click', e => {
+  e.stopPropagation();
+  soundOn = !soundOn;
+  try { localStorage.setItem('studio-sound', soundOn ? 'on' : 'off'); } catch {}
+  if (soundOn) clack(audioCtx(), audioCtx().currentTime + 0.05);
+  setTimeout(renderSound, 150); renderSound();
+});
+document.addEventListener('pointerdown', () => { if (soundOn) audioCtx()?.resume().then(renderSound).catch(() => {}); });
+let titleTimer = null;
+function flashTitle(msg) {
+  const base = 'The Studio';
+  clearInterval(titleTimer); let n = 0;
+  titleTimer = setInterval(() => { document.title = (n++ % 2) ? base : msg; if (n > 20) { clearInterval(titleTimer); document.title = base; } }, 900);
+}
+function checkEnd(s, first) {
+  const d = s?.lead?.done_at || null, f = s?.lead?.failed_at || null;
+  const fresh = at => at && Date.now() - Date.parse(at) < 90 * 1000;
+  if (d && d !== lastDone && (!first || fresh(d))) { banner = { kind: 'wrap', at: clock }; if (soundOn) wrapSound(); flashTitle("That's a wrap!"); }
+  if (f && f !== lastFail && (!first || fresh(f))) { banner = { kind: 'fail', at: clock }; if (soundOn) failSound(); flashTitle('Run stopped'); }
+  lastDone = d; lastFail = f;
+}
+
+function poll() {
+  const el = document.createElement('script');
+  el.src = 'state.js?ts=' + Date.now();
+  el.onload = () => { el.remove(); applyState(window.STUDIO_STATE || null); };
+  el.onerror = () => { el.remove(); applyState(null); };
+  document.head.appendChild(el);
+}
+
+// ---------------------------------------------------------------- hover
+const tip = $('tip');
+cv.addEventListener('mousemove', e => {
+  const rect = cv.getBoundingClientRect();
+  const lx = (e.clientX - rect.left) / rect.width * W, ly = (e.clientY - rect.top) / rect.height * H;
+  let found = null;
+  for (const a of [rio, ...IDS.map(id => actors[id])]) {
+    if (!a.hit || a.out) continue;
+    const [hx, hy, hw, hh] = a.hit;
+    if (lx >= hx && lx <= hx + hw && ly >= hy && ly <= hy + hh) { if (!found || a.y > found.y) found = a; }
+  }
+  hovered = found;
+  if (!found) { tip.style.display = 'none'; return; }
+  const d = describe(found.id), ch = found.ch;
+  tip.innerHTML = `<span class="nm">${esc(ch.name)}</span><span class="rl">${esc(ch.role)} · ${esc(ch.step)}</span>
+    <span class="pill ${d.cls}">${esc(d.cls === 'idle' ? 'Break · ' + d.act : d.text)}</span>${d.line && d.line !== d.act ? `<span class="tk">${esc(d.line)}</span>` : ''}`;
+  tip.style.display = 'block';
+  const sr = cv.parentElement.getBoundingClientRect();
+  tip.style.left = Math.min(Math.max(e.clientX - sr.left, 110), sr.width - 110) + 'px';
+  tip.style.top = (e.clientY - sr.top) + 'px';
+});
+cv.addEventListener('mouseleave', () => { hovered = null; tip.style.display = 'none'; });
+
+// ---------------------------------------------------------------- boot
+resize();
+buildPanel();
+for (const id of IDS) teleport(actors[id], 'idle');
+poll(); setInterval(poll, POLL_MS);
+setInterval(updatePanel, 1000);
+renderSound();
+updatePanel(); renderFeed(); renderSession();
+setInterval(renderSession, 30000);
+requestAnimationFrame(frame);
+window.__studioReady = true;
+})();
+</script>
+</body>
+</html>
